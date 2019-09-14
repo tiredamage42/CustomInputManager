@@ -1,6 +1,5 @@
 ﻿
 using UnityEngine;
-using System;
 
 namespace CustomInputManager
 {
@@ -11,14 +10,14 @@ namespace CustomInputManager
 		GamepadButton, GamepadAnalogButton, GamepadAxis
 	}
 
-	[Serializable] public class InputBinding
+	[System.Serializable] public class InputBinding
 	{
 
-		public static readonly string[] mouseAxisNames = new string[] { 
-			"Mouse X", "Mouse Y", "Mouse Scroll" 
-		};
+		public static readonly string[] mouseAxisNames = new string[] { "Mouse X", "Mouse Y", "Mouse Scroll" };
+		
+		// cache to not allocate string memory every frame...
 		string rawMouseAxisName { get { return string.Concat("mouse_axis_", mouseAxis); } } 
-
+		string _rawMouseAxisName;
 		public string GetAsString(bool usePositive) {
 
 			switch (m_type) {
@@ -32,7 +31,7 @@ namespace CustomInputManager
 				case InputType.GamepadButton:
 					return m_gamepadButton.ToString();
 				case InputType.GamepadAnalogButton:
-					return (Invert ? "-" : "+") + GamepadAxis.ToString();
+					return (useNegativeAxisForButton ? "-" : "+") + GamepadAxis.ToString();
 				case InputType.GamepadAxis:
 					return GamepadAxis.ToString();
 			}
@@ -46,24 +45,23 @@ namespace CustomInputManager
 		public const int MAX_MOUSE_AXES = 3;
 		public const int MAX_JOYSTICK_AXES = 28;
         public const int MAX_JOYSTICK_BUTTONS = 20;
-        public const int MAX_JOYSTICKS = 11;
-
+        public const int MAX_UNITY_JOYSTICKS = 11;
 
 		[SerializeField] private KeyCode m_positive;
 		[SerializeField] private KeyCode m_negative;
-		[SerializeField] private float m_deadZone;
-		[SerializeField] private float m_gravity;
-		[SerializeField] private float m_sensitivity;
+		[SerializeField] private float m_deadZone = .2f;
+		[SerializeField] private float m_gravity = 1;
+		[SerializeField] private float m_sensitivity = 1;
 		[SerializeField] private bool m_snap;
 		[SerializeField] private bool m_invert;
+		public bool useNegativeAxisForButton;
+		public bool rebindable, sensitivityEditable, invertEditable;
+
+
 		[SerializeField] private InputType m_type;
 		[SerializeField] private int mouseAxis;
 		[SerializeField] private GamepadAxis m_gamepadAxis;
 		[SerializeField] private GamepadButton m_gamepadButton;
-
-		
-		float digitalAxisValue;
-		ButtonState[] analogButtonStates = new ButtonState[MAX_JOYSTICKS];
 
 		public KeyCode Positive
 		{
@@ -88,14 +86,14 @@ namespace CustomInputManager
 		public float Sensitivity
 		{
 			get { return m_sensitivity; }
-			set { m_sensitivity = Math.Max(value, 0.0f); }
+			set { m_sensitivity = Mathf.Max(value, 0.0f); }
 		}
-		public bool Snap
+		public bool SnapWhenReadAsAxis
 		{
 			get { return m_snap; }
 			set { m_snap = value; }
 		}
-		public bool Invert
+		public bool InvertWhenReadAsAxis
 		{
 			get { return m_invert; }
 			set { m_invert = value; }
@@ -130,36 +128,92 @@ namespace CustomInputManager
 			m_sensitivity = 1.0f;
 		}
 
-		void ResetAnalogButtonStates () {
-			for (int i = 0; i < MAX_JOYSTICKS; i++) {
-				analogButtonStates[i] = ButtonState.Released;
-			}
-		}
+		float digitalAxisValue;
+		float[] buttonsAsAxisValue;
+		ButtonState[] axesAsButtonValues;
 
-		void Reset()
+		int maxJoysticks;
+		void Reset(int maxJoysticks)
 		{
+			this.maxJoysticks = maxJoysticks;
+
+			if (buttonsAsAxisValue == null) buttonsAsAxisValue = new float[maxJoysticks];
+			if (axesAsButtonValues == null) axesAsButtonValues = new ButtonState[maxJoysticks];
+
 			if (m_type == InputType.DigitalAxis) {
 				digitalAxisValue = AXIS_NEUTRAL;
 			}
-			if (m_type == InputType.GamepadAnalogButton) {
-				ResetAnalogButtonStates();
+
+			for (int i = 0; i < maxJoysticks; i++) {
+				buttonsAsAxisValue[i] = AXIS_NEUTRAL;
+				axesAsButtonValues[i] = ButtonState.Released;
 			}
+			
+			_rawMouseAxisName = rawMouseAxisName;
+
 		}
-		public void Initialize()
+		public void Initialize(int maxJoysticks)
 		{
-			Reset();
+			Reset(maxJoysticks);
 		}
 		public void Update(float deltaTime)
 		{
-			if(m_type == InputType.DigitalAxis)
-			{
+
+			if (m_type == InputType.GamepadAnalogButton) {
+				for (int i = 0; i < maxJoysticks; i++) {
+					if (InputManager.Gamepad.GamepadAvailable(i, out _)) {
+						UpdateAxisAsButtons(i, InputManager.Gamepad.GetAxis(m_gamepadAxis, i));
+					}
+				}
+			}
+			else if (m_type == InputType.GamepadAxis) {
+				for (int i = 0; i < maxJoysticks; i++) {
+					if (InputManager.Gamepad.GamepadAvailable(i, out _)) {
+						UpdateAxisAsButtons(i, GetAxis(i));
+					}
+				}
+			}
+			else if (m_type == InputType.MouseAxis) {
+				UpdateAxisAsButtons(0, GetAxis(0));
+			}
+
+			if(m_type == InputType.DigitalAxis) {
 				UpdateDigitalAxisValue(deltaTime);
 			}
-			
-			if(m_type == InputType.GamepadAnalogButton)
-			{
-				UpdateAnalogButtonValue();
+			else if (m_type == InputType.KeyButton) {
+				UpdateButtonAsAxisValue(deltaTime, 0);
 			}
+			else if (m_type == InputType.GamepadButton || m_type == InputType.GamepadAnalogButton){
+				for (int i = 0; i < maxJoysticks; i++) {
+					if (InputManager.Gamepad.GamepadAvailable(i, out _)) {
+						UpdateButtonAsAxisValue(deltaTime, i);
+					}
+				}
+			}	
+		}
+
+		void UpdateButtonAsAxisValue (float deltaTime, int index) {
+			bool buttonDown = GetButton(index);
+
+			float v = buttonsAsAxisValue[index];
+
+			if (buttonDown) {
+				if (v < AXIS_NEUTRAL && m_snap)
+					v = AXIS_NEUTRAL;
+
+				if (v < AXIS_POSITIVE) {
+					v += m_sensitivity * deltaTime;
+					if (v > AXIS_POSITIVE) v = AXIS_POSITIVE;
+				}
+			}
+			else
+			{
+				if (v > AXIS_NEUTRAL) {
+					v -= m_gravity * deltaTime;
+					if (v < AXIS_NEUTRAL) v = AXIS_NEUTRAL;
+				}
+			}
+			buttonsAsAxisValue[index] = v;
 		}
 
 		private void UpdateDigitalAxisValue(float deltaTime)
@@ -170,65 +224,62 @@ namespace CustomInputManager
 			if (posDown && negDown) return;
 			
 			if(posDown) {
-				if(digitalAxisValue < AXIS_NEUTRAL && m_snap)
-					digitalAxisValue = AXIS_NEUTRAL;
+				if(digitalAxisValue < AXIS_NEUTRAL && m_snap) digitalAxisValue = AXIS_NEUTRAL;
 				
-				digitalAxisValue += m_sensitivity * deltaTime;
-				
-				if(digitalAxisValue > AXIS_POSITIVE)
-					digitalAxisValue = AXIS_POSITIVE;
+				if (digitalAxisValue < AXIS_POSITIVE) {
+					digitalAxisValue += m_sensitivity * deltaTime;
+					if(digitalAxisValue > AXIS_POSITIVE) digitalAxisValue = AXIS_POSITIVE;
+				}
 			}
 			else if(negDown)
 			{
-				if(digitalAxisValue > AXIS_NEUTRAL && m_snap)
-					digitalAxisValue = AXIS_NEUTRAL;
+				if(digitalAxisValue > AXIS_NEUTRAL && m_snap) digitalAxisValue = AXIS_NEUTRAL;
 				
-				digitalAxisValue -= m_sensitivity * deltaTime;
-				
-				if(digitalAxisValue < AXIS_NEGATIVE)
-					digitalAxisValue = AXIS_NEGATIVE;
+				if (digitalAxisValue > AXIS_NEGATIVE) {
+					digitalAxisValue -= m_sensitivity * deltaTime;
+					if(digitalAxisValue < AXIS_NEGATIVE) digitalAxisValue = AXIS_NEGATIVE;
+				}	
 			}
 			else
 			{
 				if(digitalAxisValue < AXIS_NEUTRAL)
 				{
 					digitalAxisValue += m_gravity * deltaTime;
-					if(digitalAxisValue > AXIS_NEUTRAL)
-						digitalAxisValue = AXIS_NEUTRAL;	
+					if(digitalAxisValue > AXIS_NEUTRAL) digitalAxisValue = AXIS_NEUTRAL;	
 				}
 				else if(digitalAxisValue > AXIS_NEUTRAL)
 				{
 					digitalAxisValue -= m_gravity * deltaTime;
-					if(digitalAxisValue < AXIS_NEUTRAL)
-						digitalAxisValue = AXIS_NEUTRAL;
+					if(digitalAxisValue < AXIS_NEUTRAL) digitalAxisValue = AXIS_NEUTRAL;
 				}
 			}
 		}
+		
 
-		private void UpdateAnalogButtonValue()
+		private void UpdateAxisAsButtons(int index, float axis)
 		{
 
-			for (int playerID = 0; playerID < MAX_JOYSTICKS; playerID++) {
+			// inverts if the axis to check is negative
+			axis = useNegativeAxisForButton ? -axis : axis;
 
-				float axis = InputManager.Gamepad.GetAxis(m_gamepadAxis, playerID);
-
-				axis = m_invert ? -axis : axis;
-
-				if(axis > m_deadZone)
-				{
-					if(analogButtonStates[playerID] == ButtonState.Released || analogButtonStates[playerID] == ButtonState.JustReleased)
-						analogButtonStates[playerID] = ButtonState.JustPressed;
-					else if(analogButtonStates[playerID] == ButtonState.JustPressed)
-						analogButtonStates[playerID] = ButtonState.Pressed;
-				}
-				else
-				{
-					if(analogButtonStates[playerID] == ButtonState.Pressed || analogButtonStates[playerID] == ButtonState.JustPressed)
-						analogButtonStates[playerID] = ButtonState.JustReleased;
-					else if(analogButtonStates[playerID] == ButtonState.JustReleased)
-						analogButtonStates[playerID] = ButtonState.Released;
-				}
+			ButtonState v = axesAsButtonValues[index];
+				
+			if(axis > m_deadZone)
+			{
+				if (v == ButtonState.Released || v == ButtonState.JustReleased)
+					v = ButtonState.JustPressed;
+				else if (v == ButtonState.JustPressed)
+					v = ButtonState.Pressed;
 			}
+			else
+			{
+				if (v == ButtonState.Pressed || v == ButtonState.JustPressed)
+					v = ButtonState.JustReleased;
+				else if (v == ButtonState.JustReleased)
+					v = ButtonState.Released;
+			}
+			axesAsButtonValues[index] = v;
+			
 		}
 
 
@@ -236,160 +287,167 @@ namespace CustomInputManager
 		#region  GETTERS
 		public bool AnyInput (int playerID)
 		{
-				switch(m_type)
-				{
+			switch(m_type)
+			{
 				case InputType.KeyButton:
 					return Input.GetKey(m_positive);
-				
 				case InputType.GamepadAnalogButton:
-					return analogButtonStates[playerID] == ButtonState.Pressed || analogButtonStates[playerID] == ButtonState.JustPressed;
-				
+					return axesAsButtonValues[playerID] == ButtonState.Pressed || axesAsButtonValues[playerID] == ButtonState.JustPressed;
 				case InputType.GamepadButton:
 					return InputManager.Gamepad.GetButton(m_gamepadButton, playerID);
-				
 				case InputType.GamepadAxis:
-					return Mathf.Abs(InputManager.Gamepad.GetAxisRaw(m_gamepadAxis, playerID)) >= 1.0f;
-					
+					return InputManager.Gamepad.GetAxisRaw(m_gamepadAxis, playerID, m_deadZone) != 0f;
 				case InputType.DigitalAxis:
-					return Mathf.Abs(digitalAxisValue) >= 1.0f;
-
+					return digitalAxisValue != 0;
 				case InputType.MouseAxis:
-					return Mathf.Abs(Input.GetAxisRaw(rawMouseAxisName)) >= 1.0f;
-
+					return Input.GetAxisRaw(_rawMouseAxisName) != 0;
+					
 				default:
 					return false;
-				}
+			}
 		}
 		
-		public float? GetAxis(int playerID)
+		public float GetAxis(int playerID)
 		{
-			float? axis = null;
+			float axis = 0;
+		
+		
 			if(m_type == InputType.DigitalAxis)
 			{
 				axis = m_invert ? -digitalAxisValue : digitalAxisValue;
 			}
+
 			else if(m_type == InputType.MouseAxis)
 			{
-				axis = Input.GetAxis(rawMouseAxisName) * m_sensitivity;
+				axis = Input.GetAxis(_rawMouseAxisName) * m_sensitivity;
 				axis = m_invert ? -axis : axis;
 			}
 			else if(m_type == InputType.GamepadAxis)
 			{
 				axis = InputManager.Gamepad.GetAxis(m_gamepadAxis, playerID);
-				if(Mathf.Abs(axis.Value) < m_deadZone)
-				{
+				if ((axis < 0 && axis > -m_deadZone) || (axis > 0 && axis < m_deadZone))
 					axis = AXIS_NEUTRAL;
-				}
-				axis = Mathf.Clamp(axis.Value * m_sensitivity, -1, 1);
+				
+				axis = Mathf.Clamp(axis * m_sensitivity, -1, 1);
 				axis = m_invert ? -axis : axis;
 			}
 
-			if(axis.HasValue && Mathf.Abs(axis.Value) <= 0.0f)
-				axis = null;
-			
+			else if (m_type == InputType.KeyButton) {
+				axis = buttonsAsAxisValue[0];
+				axis = m_invert ? -axis : axis;
+			}
+			else if (m_type == InputType.GamepadButton) {
+				axis = buttonsAsAxisValue[playerID];
+				axis = m_invert ? -axis : axis;
+			}
+			else if (m_type == InputType.GamepadAnalogButton) {
+				axis = buttonsAsAxisValue[playerID];
+				axis = m_invert ? -axis : axis;
+			}
+
 			return axis;
 		}
 
-		///<summary>
-		///	Returns raw input with no sensitivity or smoothing applyed.
-		/// </summary>
-		public float? GetAxisRaw(int playerID)
+		public float GetAxisRaw(int playerID)
 		{
-			float? axis = null;
+			float axis = 0;
 
 			if(m_type == InputType.DigitalAxis)
 			{
 				if(Input.GetKey(m_positive))
-				{
 					axis = m_invert ? -AXIS_POSITIVE : AXIS_POSITIVE;
-				}
 				else if(Input.GetKey(m_negative))
-				{
 					axis = m_invert ? -AXIS_NEGATIVE : AXIS_NEGATIVE;
-				}
 			}
 			else if(m_type == InputType.MouseAxis)
 			{
-				axis = Input.GetAxisRaw(rawMouseAxisName);
+				axis = Input.GetAxisRaw(_rawMouseAxisName);
 				axis = m_invert ? -axis : axis;
 			}
 			else if(m_type == InputType.GamepadAxis)
 			{
-				axis = InputManager.Gamepad.GetAxisRaw(m_gamepadAxis, playerID);
+				axis = InputManager.Gamepad.GetAxisRaw(m_gamepadAxis, playerID, m_deadZone);
 				axis = m_invert ? -axis : axis;
 			}
 
-			if(axis.HasValue && Mathf.Abs(axis.Value) <= 0.0f)
-				axis = null;
+			else if (m_type == InputType.KeyButton) {
+				if (GetButton(playerID)) axis = m_invert ? -AXIS_POSITIVE : AXIS_POSITIVE;
+			}
+			else if (m_type == InputType.GamepadButton) {
+				if (GetButton(playerID)) axis = m_invert ? -AXIS_POSITIVE : AXIS_POSITIVE;
+			}
+			else if (m_type == InputType.GamepadAnalogButton) {
+				if (GetButton(playerID)) axis = m_invert ? -AXIS_POSITIVE : AXIS_POSITIVE;
+			}
+
 
 			return axis;
 		}
 
-		public bool? GetButton(int playerID)
+		public bool GetButton(int playerID)
 		{
-			bool? value = null;
+			bool value = false;
 
-			if(m_type == InputType.KeyButton)
+			if (m_type == InputType.KeyButton)
 				value = Input.GetKey(m_positive);
-			
-			else if(m_type == InputType.GamepadButton)
+			else if (m_type == InputType.GamepadButton)
 				value = InputManager.Gamepad.GetButton(m_gamepadButton, playerID);
-			
-			else if( m_type == InputType.GamepadAnalogButton)
-				value = analogButtonStates[playerID] == ButtonState.Pressed || analogButtonStates[playerID] == ButtonState.JustPressed;
-			
-			if(value.HasValue && !value.Value)
-				value = null;
+			else if ( m_type == InputType.GamepadAnalogButton)
+				value = axesAsButtonValues[playerID] == ButtonState.Pressed || axesAsButtonValues[playerID] == ButtonState.JustPressed;
+			else if ( m_type == InputType.DigitalAxis ) 
+				value = Input.GetKey(useNegativeAxisForButton ? m_negative : m_positive);
+			else if (m_type == InputType.GamepadAxis) 
+				value = axesAsButtonValues[playerID] == ButtonState.Pressed || axesAsButtonValues[playerID] == ButtonState.JustPressed;
+			else if (m_type == InputType.MouseAxis) 
+				value = axesAsButtonValues[playerID] == ButtonState.Pressed || axesAsButtonValues[playerID] == ButtonState.JustPressed;
+
 
 			return value;
 		}
 
-		public bool? GetButtonDown(int playerID)
+		public bool GetButtonDown(int playerID)
 		{
-			bool? value = null;
+			bool value = false;
 
-			if(m_type == InputType.KeyButton)
+			if (m_type == InputType.KeyButton)
 				value = Input.GetKeyDown(m_positive);
-			
-			else if(m_type == InputType.GamepadButton)
+			else if (m_type == InputType.GamepadButton)
 				value = InputManager.Gamepad.GetButtonDown(m_gamepadButton, playerID);
+			else if ( m_type == InputType.GamepadAnalogButton)
+				value = axesAsButtonValues[playerID] == ButtonState.JustPressed;
+			else if ( m_type == InputType.DigitalAxis ) 
+				value = Input.GetKeyDown(useNegativeAxisForButton ? m_negative : m_positive);
+			else if (m_type == InputType.GamepadAxis) 
+				value = axesAsButtonValues[playerID] == ButtonState.JustPressed;
+			else if (m_type == InputType.MouseAxis) 
+				value = axesAsButtonValues[playerID] == ButtonState.JustPressed;
 			
-			else if( m_type == InputType.GamepadAnalogButton)
-				value = analogButtonStates[playerID] == ButtonState.JustPressed;
-			
-			if(value.HasValue && !value.Value)
-				value = null;
-
 			return value;
 		}
 
-		public bool? GetButtonUp(int playerID)
+		public bool GetButtonUp(int playerID)
+		
 		{
-			bool? value = null;
+			bool value = false;
 
 			if(m_type == InputType.KeyButton)
 				value = Input.GetKeyUp(m_positive);
-			
 			else if(m_type == InputType.GamepadButton)
 				value = InputManager.Gamepad.GetButtonUp(m_gamepadButton, playerID);
-			
 			else if( m_type == InputType.GamepadAnalogButton)
-				value = analogButtonStates[playerID] == ButtonState.JustReleased;
-			
-			if(value.HasValue && !value.Value)
-				value = null;
+				value = axesAsButtonValues[playerID] == ButtonState.JustReleased;
+			else if ( m_type == InputType.DigitalAxis )
+				value = Input.GetKeyUp(useNegativeAxisForButton ? m_negative : m_positive);
+			else if (m_type == InputType.GamepadAxis) 
+				value = axesAsButtonValues[playerID] == ButtonState.JustReleased;
+			else if (m_type == InputType.MouseAxis) 
+				value = axesAsButtonValues[playerID] == ButtonState.JustReleased;				
 
 			return value;
 		}
 		#endregion
 
 		
-		public static InputBinding Duplicate(InputBinding source)
-		{
-			InputBinding duplicate = new InputBinding();
-			duplicate.Copy(source);
-			return duplicate;
-		}
 		public void Copy(InputBinding source)
 		{
 			m_positive = source.m_positive;
@@ -400,7 +458,12 @@ namespace CustomInputManager
 			m_sensitivity = source.m_sensitivity;
 			m_snap = source.m_snap;
 			m_invert = source.m_invert;
+			useNegativeAxisForButton = source.useNegativeAxisForButton;
 			m_type = source.m_type;
+
+			rebindable = source.rebindable;
+			sensitivityEditable = source.sensitivityEditable;
+			invertEditable = source.invertEditable;
 
 			mouseAxis = source.mouseAxis;
 			m_gamepadAxis = source.m_gamepadAxis;

@@ -6,9 +6,6 @@ namespace CustomInputManager.Examples
 	[RequireComponent(typeof(CharacterMotor))]
 	public class FPSInputController : MonoBehaviour
 	{
-		[SerializeField]
-		private bool m_quitWithEscape = false;
-
 		private CharacterMotor motor;
 
 		private void Awake()
@@ -16,11 +13,22 @@ namespace CustomInputManager.Examples
 			motor = GetComponent<CharacterMotor>();
 		}
 
+		int _HorizontalAxis, _VerticalAxis, _JumpButton;
+        void InitializeInputNameKeys () {
+            _HorizontalAxis = InputManager.Name2Key("Horizontal");
+            _VerticalAxis = InputManager.Name2Key("Vertical");
+            _JumpButton = InputManager.Name2Key("Jump");
+        }
+
+		void OnEnable () {
+			InitializeInputNameKeys();
+		}
+
 		private	void Update() 
 		{
 			// Get the input vector from keyboard or analog stick
-			var directionVector = new Vector3(InputManager.GetAxis("Horizontal"), 0, InputManager.GetAxis("Vertical"));
-			
+			var directionVector = new Vector3(InputManager.GetAxis(_HorizontalAxis), 0, InputManager.GetAxis(_VerticalAxis));
+			// Debug.Log(directionVector);
 			if (directionVector != Vector3.zero) 
 			{
 				// Get the length of the directon vector and then normalize it
@@ -43,21 +51,8 @@ namespace CustomInputManager.Examples
 			motor.inputMoveDirection = transform.rotation * directionVector;
 
 
-			motor.inputJump = InputManager.GetButtonDown("Jump");
+			motor.inputJump = InputManager.GetButtonDown(_JumpButton);
 			
-			if(m_quitWithEscape && InputManager.GetKeyDown(KeyCode.Escape))
-			{
-				Quit();
-			}
-		}
-
-		private void Quit()
-		{
-#if UNITY_EDITOR
-			UnityEditor.EditorApplication.isPlaying = false;
-#else
-			Application.Quit();
-#endif
 		}
 	}
 }

@@ -23,64 +23,30 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Collections;
-
+using System.IO;
 namespace CustomInputManager
 {
-	public class SaveData
-    {
-        public List<ControlScheme> ControlSchemes;
-        public string[] playerSchemes;
-        
-		public SaveData()
-		{
-			ControlSchemes = new List<ControlScheme>();
-            playerSchemes = new string[InputManager.maxPlayers];	
-		}
-    }
 	
 	public partial class InputManager : MonoBehaviour
 	{
-
-		#region  EDITORSTUFF
-		public string GetPlayerDefault(int playerIndex) {
-			return playerSchemesDefaults[playerIndex];
-		}
-		public void SetPlayerDefault(int playerIndex, string value) {
-			playerSchemesDefaults[playerIndex] = value;
-		}
-		#endregion
-
-
-		public const int maxPlayers = InputBinding.MAX_JOYSTICKS;
-
-
-		
 		public GamepadHandler gamepad;
+		public static GamepadHandler Gamepad { get { return m_instance.gamepad; } }
 
-		public static GamepadHandler Gamepad {
-			get {
-				return m_instance.gamepad;
-			}
-		}
-
-		[SerializeField] private List<ControlScheme> m_controlSchemes = new List<ControlScheme>();
-		[SerializeField] string[] playerSchemesDefaults = new string[maxPlayers];
-		
-		
-		ControlScheme[] playerSchemes = new ControlScheme[maxPlayers];
+		[HideInInspector] [SerializeField] private List<ControlScheme> m_controlSchemes = new List<ControlScheme>();
+		public TextAsset defaultInputsXML;
+		ControlScheme[] playerSchemes;
 		
 		private ScanService m_scanService;
-		private static InputManager m_instance;
+		public static InputManager m_instance;
 		
+
 		private Dictionary<string, ControlScheme> m_schemeLookup;
-		private Dictionary<string, ControlScheme> m_schemeLookupByID;
-		private Dictionary<string, Dictionary<string, InputAction>> m_actionLookup;
 
+		public List<ControlScheme> ControlSchemes { get { return m_controlSchemes; } }
 
-		public List<ControlScheme> ControlSchemes
-		{
-			get { return m_controlSchemes; }
-		}
+		public int maxJoysticks  { get { return numPlayers; } }
+		public int numPlayers = 2;
+
 
 		private void Awake()
 		{
@@ -88,16 +54,17 @@ namespace CustomInputManager
 			{
 				m_instance = this;
 				m_scanService = new ScanService();
-				m_schemeLookup = new Dictionary<string, ControlScheme>();
-				m_schemeLookupByID = new Dictionary<string, ControlScheme>();
-				m_actionLookup = new Dictionary<string, Dictionary<string, InputAction>>();
 
+				m_schemeLookup = new Dictionary<string, ControlScheme>();
+				
 				Initialize();
-				gamepad.Awake(this);
+
+				gamepad.Awake(this, maxJoysticks);
 
 				// try and load custom runtime bindings
-				Load();
-
+				if (!LoadOverridenControls()) {
+					ResetSchemes(defaultInputsXML);
+				}
 			}
 			else
 			{
@@ -119,107 +86,75 @@ namespace CustomInputManager
 		private void Initialize()
 		{
 			m_schemeLookup.Clear();
-			m_actionLookup.Clear();
-
-			for (int i = 0; i < maxPlayers; i++) {
-				playerSchemes[i] = null;
+			
+			playerSchemes = new ControlScheme[numPlayers];
+			for (int i = 0; i < numPlayers; i++) playerSchemes[i] = null;
+		
+			if(m_controlSchemes.Count == 0) {
+				Debug.LogWarning("No Control Schemes Loaded...");
+				return;
 			}
 
-			if(m_controlSchemes.Count == 0)
-				return;
+			for (int i = 0; i < numPlayers; i++) {
+				playerSchemes[i] = m_controlSchemes[0];
+			}
 
 			PopulateLookupTables();
 
-			for (int i = 0; i < maxPlayers; i++) {
-				if(!string.IsNullOrEmpty(playerSchemesDefaults[i]) && m_schemeLookupByID.ContainsKey(playerSchemesDefaults[i]))
-				{
-					playerSchemes[i] = m_schemeLookupByID[playerSchemesDefaults[i]];
-				}
-				else {
-					if (i == 0) {
-						if(m_controlSchemes.Count > 0)
-							playerSchemes[i] = m_controlSchemes[0];
-					}
-				}
-			}
-
 			foreach(ControlScheme scheme in m_controlSchemes)
-			{
-				scheme.Initialize();
-			}
-
+				scheme.Initialize(maxJoysticks);
+			
 			Input.ResetInputAxes();
 		}
 
 		private void PopulateLookupTables()
 		{
+
+			Debug.Log("Initializing scheme lookup " + m_controlSchemes.Count);
+
 			m_schemeLookup.Clear();
-			m_schemeLookupByID.Clear();
 			foreach(ControlScheme scheme in m_controlSchemes)
 			{
 				m_schemeLookup[scheme.Name] = scheme;
-				m_schemeLookupByID[scheme.UniqueID] = scheme;
-			}
-
-			m_actionLookup.Clear();
-			foreach(ControlScheme scheme in m_controlSchemes)
-			{
-				m_actionLookup[scheme.Name] = scheme.GetActionLookupTable();
 			}
 		}
 
 		private void Update()
 		{
+			float unscaledDeltaTime = Time.unscaledDeltaTime;
+			gamepad.OnUpdate(unscaledDeltaTime);
 
-			gamepad.OnUpdate(Time.unscaledDeltaTime);
 
-			for (int i = 0; i < maxPlayers; i++) {
-				if(playerSchemes[i] != null)
-				{
-					playerSchemes[i].Update(Time.unscaledDeltaTime);
-				}
+			for (int i = 0; i < m_controlSchemes.Count; i++) {
+				m_controlSchemes[i].Update(unscaledDeltaTime);
 			}
-				
+
 			if(m_scanService.IsScanning)
 			{
-				m_scanService.Update(Time.unscaledTime, KeyCode.Escape, 5.0f);
+				m_scanService.Update(Time.unscaledTime, KeyCode.Escape, 5.0f, numPlayers);
 			}
 
 		}
 		private int? IsControlSchemeInUse(string name)
 		{
-			for (int i = 0; i < maxPlayers; i++) {
+			for (int i = 0; i < numPlayers; i++) {
 				if(playerSchemes[i] != null && playerSchemes[i].Name == name)
 					return i;
 			}
 			return null;
 		}
 
-		public void SetSaveData(SaveData saveData)
+		public void SetSaveData(List<ControlScheme> controlSchemes)
 		{
-			if(saveData != null)
-			{
-				m_controlSchemes = saveData.ControlSchemes;
-				playerSchemesDefaults = saveData.playerSchemes;
-			}
+			if (controlSchemes != null) 
+				m_controlSchemes = controlSchemes;
 		}
 
-		public SaveData GetSaveData()
-		{
-			SaveData d = new SaveData();
-			d.ControlSchemes = m_controlSchemes;
-			d.playerSchemes = playerSchemesDefaults;
-			return d;
-		}
-
-
+		
 		#region [Static Interface]
 		
 
-		public static bool IsScanning
-		{
-			get { return m_instance.m_scanService.IsScanning; }
-		}
+		public static bool IsScanning { get { return m_instance.m_scanService.IsScanning; } }
 
 		public static ControlScheme GetControlScheme(int playerID) {
 			return m_instance.playerSchemes[playerID];
@@ -230,8 +165,10 @@ namespace CustomInputManager
 		/// </summary>
 		public static bool AnyInput()
 		{
-			for (int i = 0; i < maxPlayers; i++) {
-				if (AnyInput(m_instance.playerSchemes[i], i)) {
+
+			int c = m_instance.m_controlSchemes.Count;
+			for (int i = 0; i < c; i++) {
+				if (AnyInput(m_instance.m_controlSchemes[i], i)) {
 					return true;
 				}
 			}
@@ -252,11 +189,9 @@ namespace CustomInputManager
 		public static bool AnyInput(string schemeName, int playerID)
 		{
 			ControlScheme scheme;
-			if(m_instance.m_schemeLookup.TryGetValue(schemeName, out scheme))
-			{
+			if(m_instance.m_schemeLookup.TryGetValue(schemeName, out scheme)) {
 				return scheme.AnyInput(playerID);
 			}
-
 			return false;
 		}
 
@@ -282,11 +217,14 @@ namespace CustomInputManager
 		{
 			int? playerWhoUsesControlScheme = m_instance.IsControlSchemeInUse(name);
 
-			if(playerWhoUsesControlScheme.HasValue && playerWhoUsesControlScheme.Value != playerID)
-			{
-				Debug.LogErrorFormat("The control scheme named \'{0}\' is already being used by player {1}", name, playerWhoUsesControlScheme.Value.ToString());
-				return;
-			}
+			// this assumes only one player per control scheme, which only works for strictly
+			// keyboard only games...
+
+			// if(playerWhoUsesControlScheme.HasValue && playerWhoUsesControlScheme.Value != playerID)
+			// {
+			// 	Debug.LogErrorFormat("The control scheme named \'{0}\' is already being used by player {1}", name, playerWhoUsesControlScheme.Value.ToString());
+			// 	return;
+			// }
 
 			if(playerWhoUsesControlScheme.HasValue && playerWhoUsesControlScheme.Value == playerID) {
 				Debug.LogWarning("player " + playerID + " is already using scheme: " + name);
@@ -296,7 +234,7 @@ namespace CustomInputManager
 			ControlScheme controlScheme = null;
 			if(m_instance.m_schemeLookup.TryGetValue(name, out controlScheme))
 			{
-				controlScheme.Initialize();
+				controlScheme.Initialize(m_instance.maxJoysticks);
 				m_instance.playerSchemes[playerID] = controlScheme;
 			}
 			else
@@ -307,122 +245,45 @@ namespace CustomInputManager
 
 		public static ControlScheme GetControlScheme(string name)
 		{
-			ControlScheme scheme = null;
-			if(m_instance.m_schemeLookup.TryGetValue(name, out scheme))
+			ControlScheme scheme;
+			if(m_instance.m_schemeLookup.TryGetValue(name, out scheme)) {
 				return scheme;
-
+			}
+			Debug.LogError("Scheme " + name + " does not exist");
 			return null;
 		}
 
-		public static InputAction GetAction(string controlSchemeName, string actionName)
+		public static InputAction GetAction(int playerID, int actionKey)
 		{
-			Dictionary<string, InputAction> table;
-			if(m_instance.m_actionLookup.TryGetValue(controlSchemeName, out table))
-			{
-				InputAction action;
-				if(table.TryGetValue(actionName, out action))
-					return action;
-			}
-			return null;
-		}
-
-		public static InputAction GetAction(int playerID, string actionName)
-		{
-			var scheme = m_instance.playerSchemes[playerID];
-			if(scheme == null)
-				return null;
-
-			Dictionary<string, InputAction> table;
-			if(m_instance.m_actionLookup.TryGetValue(scheme.Name, out table))
-			{
-				InputAction action;
-				if(table.TryGetValue(actionName, out action))
-					return action;
-			}
-
-			return null;
-		}
-
-		public static ControlScheme CreateControlScheme(string name)
-		{
-			if(m_instance.m_schemeLookup.ContainsKey(name))
-			{
-				Debug.LogError(string.Format("A control scheme named \'{0}\' already exists", name));
-				return null;
-			}
-
-			ControlScheme scheme = new ControlScheme(name);
-			m_instance.m_controlSchemes.Add(scheme);
-			m_instance.m_schemeLookup[name] = scheme;
-			m_instance.m_actionLookup[name] = new Dictionary<string, InputAction>();
-
-			return scheme;
-		}
-
-		/// <summary>
-		/// Deletes the specified control scheme. If the speficied control scheme is
-		/// active for any player then the active control scheme for the respective player will be set to null.
-		/// </summary>
-		public static bool DeleteControlScheme(string name)
-		{
-			ControlScheme scheme = GetControlScheme(name);
-			if(scheme == null)
-				return false;
-
-			m_instance.m_actionLookup.Remove(name);
-			m_instance.m_schemeLookup.Remove(name);
-			m_instance.m_controlSchemes.Remove(scheme);
-
-			for (int i = 0; i < maxPlayers; i++) {
-				if(m_instance.playerSchemes[i].Name == scheme.Name)
-					m_instance.playerSchemes[i] = null;
-			}
-				
-			return true;
+			ControlScheme scheme = m_instance.playerSchemes[playerID];
+			if(scheme == null) return null;
+			return scheme.GetAction(actionKey);
 		}
 
 
-		/// <summary>
-		/// Creates an uninitialized input action. It's your responsability to configure it properly.
-		/// </summary>
-		public static InputAction CreateEmptyAction(string controlSchemeName, string actionName)
-		{
-			ControlScheme scheme = GetControlScheme(controlSchemeName);
-			if(scheme == null)
-			{
-				Debug.LogError(string.Format("A control scheme named \'{0}\' does not exist", controlSchemeName));
-				return null;
+		public static int Name2Key (string name) {
+			bool nameValid = false;
+			for (int i = 0; i < m_instance.ControlSchemes.Count; i++) {
+				if (m_instance.ControlSchemes[i].HasActionName(name)) {
+					nameValid = true;
+					break;
+				}
 			}
-			if(m_instance.m_actionLookup[controlSchemeName].ContainsKey(actionName))
-			{
-				Debug.LogError(string.Format("The control scheme named {0} already contains an action named {1}", controlSchemeName, actionName));
-				return null;
+			if (!nameValid) {
+				Debug.LogError(string.Format("An action named \'{0}\' does not exist in the active input configuration", name));
+				return -1;
 			}
-
-			InputAction action = scheme.CreateNewAction(actionName);
-
-			m_instance.m_actionLookup[controlSchemeName][actionName] = action;
-			
-			// InputBinding binding = action.CreateNewBinding();
-			// binding.Type = InputType.MouseAxis;
-			// binding.MouseAxis = axis;
-			// binding.Sensitivity = sensitivity;
-			// action.Initialize();
-			return action;
+			return Shader.PropertyToID(name);
+		}
+		public static int Name2Key (string name, int playerID) {
+			ControlScheme scheme = m_instance.playerSchemes[playerID];
+			if (!scheme.HasActionName(name)) {
+				Debug.LogError(string.Format("An action named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
+				return -1;
+			}
+			return Shader.PropertyToID(name);
 		}
 
-		public static bool DeleteAction(string controlSchemeName, string actionName)
-		{
-			ControlScheme scheme = GetControlScheme(controlSchemeName);
-			InputAction action = GetAction(controlSchemeName, actionName);
-			if(scheme != null && action != null)
-			{
-				m_instance.m_actionLookup[scheme.Name].Remove(action.Name);
-				scheme.DeleteAction(action);
-				return true;
-			}
-			return false;
-		}
 
 		public static void StartInputScan(ScanFlags scanFlags, ScanHandler scanHandler, System.Action onScanEnd)
 		{
@@ -456,7 +317,7 @@ namespace CustomInputManager
 		{
 			if(inputSaver != null)
 			{
-				inputSaver.Save(m_instance.GetSaveData());
+				inputSaver.Save(m_instance.ControlSchemes);//.GetSaveData());
 			}
 			else
 			{
@@ -469,31 +330,76 @@ namespace CustomInputManager
 		/// <summary>
 		/// Loads the control schemes from an XML file, from Application.persistentDataPath.
 		/// </summary>
-		public static void Load()
+		public static bool LoadOverridenControls()
 		{
-			Load(Application.persistentDataPath + "/InputManagerOverride.xml");
+			return Load(Application.persistentDataPath + "/InputManagerOverride.xml");
 		}
 
 		/// <summary>
 		/// Loads the control schemes saved in the XML format, from the specified location.
 		/// </summary>
-		public static void Load(string filePath)
+		public static bool Load(string filePath)
 		{
-			#if UNITY_WINRT && !UNITY_EDITOR
+#if UNITY_WINRT && !UNITY_EDITOR
 			if(UnityEngine.Windows.File.Exists(filePath))
 #else
 			if(System.IO.File.Exists(filePath))
 #endif
 			{
-
 				Load(new InputLoaderXML(filePath));
+				return true;
+			}
+			return false;
+		}
+
+		public static void ResetSchemes( TextAsset defaultInputSchemesXML )
+		{
+			using(StringReader reader = new StringReader(defaultInputSchemesXML.text))
+			{
+                Load(new InputLoaderXML(reader));
 			}
 		}
+		public static bool ResetScheme( string m_controlSchemeName, int bindingIndex)
+		{
+			ControlScheme defControlScheme = null;
+			using(StringReader reader = new StringReader(InputManager.m_instance.defaultInputsXML.text))
+			{
+				defControlScheme = new InputLoaderXML(reader).Load(m_controlSchemeName);
+			}
+
+			if(defControlScheme != null)
+			{
+				ControlScheme controlScheme = InputManager.GetControlScheme(m_controlSchemeName);
+				if(defControlScheme.Actions.Count == controlScheme.Actions.Count)
+				{
+					for(int i = 0; i < defControlScheme.Actions.Count; i++)
+					{
+						controlScheme.Actions[i].GetBinding(bindingIndex).Copy(defControlScheme.Actions[i].GetBinding(bindingIndex));
+					}
+
+					InputManager.Reinitialize();
+
+                    return true;
+				}
+				else
+				{
+					Debug.LogError("Current and default control scheme don't have the same number of actions");
+				}
+			}
+			else
+			{
+				Debug.LogErrorFormat("Default input profile doesn't contain a control scheme named '{0}'", m_controlSchemeName);
+			}
+
+            return false;
+		}
+
 
 		public static void Load(InputLoaderXML inputLoader)
 		{
 			if(inputLoader != null)
 			{
+				// Debug.Log("loading input override... " + Application.persistentDataPath);
 				m_instance.SetSaveData(inputLoader.Load());
 				m_instance.Initialize();
 			}

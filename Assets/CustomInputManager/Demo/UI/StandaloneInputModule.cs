@@ -6,56 +6,134 @@ using CustomInputManager;
 
 namespace Syd.UI
 {
+    // [AddComponentMenu("CustomInputModule/Standalone Input Module")]
+//     public class StandaloneInputModule : PointerInputModule
+//     {
+//         float GetAxisRaw (string axis) {
+//             return InputManager.GetAxisRaw(axis);
+//         }
+//         bool GetButtonDown (string button) {
+//             return InputManager.GetButtonDown(button);
+//         }
+//         bool GetMouseButtonDown (int button) {
+//             return InputManager.GetMouseButtonDown(button);
+//         }
+//         Vector2 mousePosition {
+//             get {
+//                 return InputManager.mousePosition;
+//             }
+//         }
+
+
+
+//         [HideInInspector] public GameObject currentDefaultSelection;
+//         bool overrideInput;
+    
+//         float m_NextAction;
+
+//         private Vector2 m_LastMousePosition, m_MousePosition;
+        
+//         [SerializeField] private string m_HorizontalAxis = "Horizontal";
+//         [SerializeField] private string m_VerticalAxis = "Vertical";
+
+//         // [SerializeField] private string m_UpButton = "UI_Up";
+// 		// [SerializeField] private string m_DownButton = "UI_Down";
+// 		// [SerializeField] private string m_LeftButton = "UI_Left";
+// 		// [SerializeField] private string m_RightButton = "UI_Right";
+    
+//         [SerializeField] private string m_SubmitButton = "Submit";
+//         [SerializeField] private string m_CancelButton = "Cancel";
+
+//         [SerializeField] private float m_InputActionsPerSecond = 10;
+
+
+
+        
+
+
+
+        
+//     }
+
+
+
+
+    
+// }
+
+
+// using System;
+
+// namespace UnityEngine.EventSystems
+// {
     [AddComponentMenu("Event/Standalone Input Module")]
     public class StandaloneInputModule : PointerInputModule
     {
-        float GetAxisRaw (string axis) {
+        float GetAxisRaw (int axis) {
             return InputManager.GetAxisRaw(axis);
         }
-        bool GetButtonDown (string button) {
+        bool GetButtonDown (int button) {
             return InputManager.GetButtonDown(button);
         }
         bool GetMouseButtonDown (int button) {
             return InputManager.GetMouseButtonDown(button);
         }
-        Vector2 mousePosition {
-            get {
-                return InputManager.mousePosition;
-            }
-        }
 
-
-
-        [HideInInspector] public GameObject currentDefaultSelection;
         bool overrideInput;
     
-        float m_NextAction;
+        private float m_NextAction;
+        private Vector2 m_LastMousePosition;
+        private Vector2 m_MousePosition;
 
-        private Vector2 m_LastMousePosition, m_MousePosition;
+        int _HorizontalAxis, _VerticalAxis, _SubmitButton, _CancelButton;
+        void InitializeInputNameKeys () {
+            _HorizontalAxis = InputManager.Name2Key(m_HorizontalAxis);
+            _VerticalAxis = InputManager.Name2Key(m_VerticalAxis);
+            _SubmitButton = InputManager.Name2Key(m_SubmitButton);
+            _CancelButton = InputManager.Name2Key(m_CancelButton);
+        }
+
+        protected override void OnEnable() {
+            base.OnEnable();
+            InitializeInputNameKeys();
+        }
+
         
-        [SerializeField] private string m_HorizontalAxis = "Horizontal";
-        [SerializeField] private string m_VerticalAxis = "Vertical";
 
-        [SerializeField] private string m_UpButton = "UI_Up";
-		[SerializeField] private string m_DownButton = "UI_Down";
-		[SerializeField] private string m_LeftButton = "UI_Left";
-		[SerializeField] private string m_RightButton = "UI_Right";
-    
-        [SerializeField] private string m_SubmitButton = "Submit";
-        [SerializeField] private string m_CancelButton = "Cancel";
+        [SerializeField]
+        private string m_HorizontalAxis = "Horizontal";
 
-        [SerializeField] private float m_InputActionsPerSecond = 10;
+        /// <summary>
+        /// Name of the vertical axis for movement (if axis events are used).
+        /// </summary>
+        [SerializeField]
+        private string m_VerticalAxis = "Vertical";
+
+        /// <summary>
+        /// Name of the submit button.
+        /// </summary>
+        [SerializeField]
+        private string m_SubmitButton = "Submit";
+
+        /// <summary>
+        /// Name of the submit button.
+        /// </summary>
+        [SerializeField]
+        private string m_CancelButton = "Cancel";
+
+        [SerializeField]
+        private float m_InputActionsPerSecond = 10;
 
         
         public override void UpdateModule()
         {
             m_LastMousePosition = m_MousePosition;
-            m_MousePosition = mousePosition;
+            m_MousePosition = InputManager.mousePosition;
         }
 
         public override bool IsModuleSupported()
         {
-            return true;//InputManager.mousePresent;
+            return true;
         }
 
         public override bool ShouldActivateModule()
@@ -68,33 +146,30 @@ namespace Syd.UI
             }
             
 
-            var shouldActivate = GetButtonDown(m_SubmitButton);
-            shouldActivate |= GetButtonDown(m_CancelButton);
+            var shouldActivate = GetButtonDown(_SubmitButton);
+            shouldActivate |= GetButtonDown(_CancelButton);
 
-        
-            shouldActivate |= GetButtonDown(m_UpButton);
-			shouldActivate |= GetButtonDown(m_DownButton);
-			shouldActivate |= GetButtonDown(m_LeftButton);
-			shouldActivate |= GetButtonDown(m_RightButton);
+            // shouldActivate |= GetButtonDown(_UpButton);
+			// shouldActivate |= GetButtonDown(_DownButton);
+			// shouldActivate |= GetButtonDown(_LeftButton);
+			// shouldActivate |= GetButtonDown(_RightButton);
 	
-
-
-            shouldActivate |= !Mathf.Approximately(GetAxisRaw(m_HorizontalAxis), 0.0f);
-            shouldActivate |= !Mathf.Approximately(GetAxisRaw(m_VerticalAxis), 0.0f);
-
-
+            shouldActivate |= !Mathf.Approximately(GetAxisRaw(_HorizontalAxis), 0.0f);
+            shouldActivate |= !Mathf.Approximately(GetAxisRaw(_VerticalAxis), 0.0f);
             shouldActivate |= (m_MousePosition - m_LastMousePosition).sqrMagnitude > 0.0f;
             shouldActivate |= GetMouseButtonDown(0);
             return shouldActivate;
         }
 
+
         public override void ActivateModule()
         {
             base.ActivateModule();
-            m_MousePosition = mousePosition;
-            m_LastMousePosition = mousePosition;
+            m_MousePosition = InputManager.mousePosition;
+            m_LastMousePosition = InputManager.mousePosition;
 
             var toSelect = eventSystem.currentSelectedGameObject;
+            
             if (toSelect == null)
                 toSelect = eventSystem.firstSelectedGameObject;
 
@@ -123,6 +198,7 @@ namespace Syd.UI
             ProcessMouseEvent();
         }
 
+
         public void OverrideInput (bool overrriden) {
             if (overrriden) {
                 overrideInput = true;
@@ -130,8 +206,8 @@ namespace Syd.UI
             else {
                 StartCoroutine(UnOverrideInput());
             }
-
         }
+
         System.Collections.IEnumerator UnOverrideInput () {
             yield return new WaitForSecondsRealtime(1f/m_InputActionsPerSecond);
             overrideInput = false;
@@ -146,57 +222,68 @@ namespace Syd.UI
                 return false;
             }
             
-            
-            
-
             var data = GetBaseEventData();
-            if (GetButtonDown(m_SubmitButton))
+            if (GetButtonDown(_SubmitButton))
                 ExecuteEvents.Execute(eventSystem.currentSelectedGameObject, data, ExecuteEvents.submitHandler);
 
-            if (GetButtonDown(m_CancelButton)) {
+            if (GetButtonDown(_CancelButton)) {
                 ExecuteEvents.Execute(eventSystem.currentSelectedGameObject, data, ExecuteEvents.cancelHandler);
-                
             }
             return data.used;
         }
+
 
         private bool AllowMoveEventProcessing(float time)
         {
             if (overrideInput) {
                 return false;
             }
-            bool allow = GetButtonDown(m_HorizontalAxis);
-            allow |= GetButtonDown(m_VerticalAxis);
+            
+            bool allow = GetButtonDown(_HorizontalAxis);
+            allow |= GetButtonDown(_VerticalAxis);
 
-            allow |= GetButtonDown(m_UpButton);
-			allow |= GetButtonDown(m_DownButton);
-			allow |= GetButtonDown(m_LeftButton);
-			allow |= GetButtonDown(m_RightButton);
+            //  allow |= GetButtonDown(_UpButton);
+            // 	allow |= GetButtonDown(_DownButton);
+            // 	allow |= GetButtonDown(_LeftButton);
+            // 	allow |= GetButtonDown(_RightButton);
 	
-
-
             allow |= (time > m_NextAction);
             return allow;
         }
+        [HideInInspector] public GameObject currentDefaultSelection;
 
+        
         private Vector2 GetRawMoveVector()
         {
             Vector2 move = Vector2.zero;
-            move.x = GetAxisRaw(m_HorizontalAxis);
-            move.y = GetAxisRaw(m_VerticalAxis);
+            move.x = GetAxisRaw(_HorizontalAxis);
+            move.y = GetAxisRaw(_VerticalAxis);
 
-            if(GetButtonDown(m_LeftButton)) move.x = -1.0f;
-            if(GetButtonDown(m_RightButton)) move.x = 1.0f;
-            if(GetButtonDown(m_UpButton))  move.y = 1.0f;
-            if(GetButtonDown(m_DownButton)) move.y = -1.0f;
+            // if (GetButtonDown(_HorizontalAxis))
+            {
+                if (move.x < 0)
+                    move.x = -1f;
+                if (move.x > 0)
+                    move.x = 1f;
+            }
+            // if (GetButtonDown(_VerticalAxis))
+            {
+                if (move.y < 0)
+                    move.y = -1f;
+                if (move.y > 0)
+                    move.y = 1f;
+            }
+            //     if(GetButtonDown(m_LeftButton)) move.x = -1.0f;
+            //     if(GetButtonDown(m_RightButton)) move.x = 1.0f;
+            //     if(GetButtonDown(m_UpButton))  move.y = 1.0f;
+            //     if(GetButtonDown(m_DownButton)) move.y = -1.0f;
             
             return move;
         }
 
-        public void ActionTime() {
-            m_NextAction = Time.unscaledTime + 1f / m_InputActionsPerSecond;
-        }
-
+        /// <summary>
+        /// Process keyboard events.
+        /// </summary>
         private bool SendMoveEventToSelectedObject()
         {
             if (overrideInput) {
@@ -211,22 +298,21 @@ namespace Syd.UI
             Vector2 movement = GetRawMoveVector();
             // Debug.Log(m_ProcessingEvent.rawType + " axis:" + m_AllowAxisEvents + " value:" + "(" + x + "," + y + ")");
             var axisEventData = GetAxisEventData(movement.x, movement.y, 0.6f);
-
-            ActionTime();
-            
             if (!Mathf.Approximately(axisEventData.moveVector.x, 0f) || !Mathf.Approximately(axisEventData.moveVector.y, 0f))
             {
-                if (currentDefaultSelection != null) {
-                    if (eventSystem.currentSelectedGameObject == null) {
-                        eventSystem.SetSelectedGameObject(currentDefaultSelection);            
-                        return axisEventData.used;
-                    }
-                }
                 ExecuteEvents.Execute(eventSystem.currentSelectedGameObject, axisEventData, ExecuteEvents.moveHandler);
             }
+            m_NextAction = time + 1f / m_InputActionsPerSecond;
             return axisEventData.used;
         }
 
+        public void ActionTime () {
+            m_NextAction = Time.unscaledDeltaTime + 1f / m_InputActionsPerSecond;
+        }
+
+        /// <summary>
+        /// Process all mouse events.
+        /// </summary>
         private void ProcessMouseEvent()
         {
             var mouseData = GetMousePointerEventData();
@@ -267,19 +353,22 @@ namespace Syd.UI
 
         private bool SendUpdateEventToSelectedObject()
         {
-            if (eventSystem.currentSelectedGameObject == null)
-                return false;
-
             if (overrideInput) {
                 return false;
             }
             
+
+            if (eventSystem.currentSelectedGameObject == null)
+                return false;
 
             var data = GetBaseEventData();
             ExecuteEvents.Execute(eventSystem.currentSelectedGameObject, data, ExecuteEvents.updateSelectedHandler);
             return data.used;
         }
 
+        /// <summary>
+        /// Process the current mouse press.
+        /// </summary>
         private void ProcessMousePress(MouseButtonEventData data)
         {
             var pointerEvent = data.buttonData;

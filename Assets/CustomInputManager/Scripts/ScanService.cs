@@ -3,7 +3,13 @@ using UnityEngine;
 
 namespace CustomInputManager
 {
-	public enum ScanFlags { None = 0, Key = 1 << 1, JoystickButton = 1 << 2, JoystickAxis = 1 << 3, MouseAxis = 1 << 4 }
+	public enum ScanFlags { 
+		None = 0, 
+		Key = 1 << 1, 
+		JoystickButton = 1 << 2, 
+		JoystickAxis = 1 << 3, 
+		MouseAxis = 1 << 4 
+	}
     
     public struct ScanResult {
 		public ScanFlags ScanFlags;
@@ -100,31 +106,34 @@ namespace CustomInputManager
 
 		bool EndScan() {
 			m_scanHandler = null;
-			if (onScanEnd != null) {
+
+			if (onScanEnd != null)
 				onScanEnd();
-				onScanEnd = null;
-			}
+			
+			onScanEnd = null;
 			return true;
 		}
 
-		public void Update(float gameTime, KeyCode cancelScanKey, float maxScanTime)
+		public void Update(float gameTime, KeyCode cancelScanKey, float maxScanTime, int numJoysticks)
 		{
 			float timeout = gameTime - m_scanStartTime;
 
 			// or on cancel
-			if(Input.GetKeyDown(cancelScanKey) || timeout >= maxScanTime)
-			{
+			if(Input.GetKeyDown(cancelScanKey) || timeout >= maxScanTime) {
 				Stop();
 				return;
 			}
 
 			bool success = false;
-			if(HasFlag(ScanFlags.Key))
+			if(!success && HasFlag(ScanFlags.Key))
 				success = ScanKey();
+
 			if(!success && HasFlag(ScanFlags.JoystickButton))
-				success = ScanJoystickButton();
+				success = ScanJoystickButton(numJoysticks);
+
 			if(!success && HasFlag(ScanFlags.JoystickAxis))
-				success = ScanJoystickAxis();
+				success = ScanJoystickAxis(numJoysticks);
+
 			if(!success && HasFlag(ScanFlags.MouseAxis))
 				success = ScanMouseAxis();
 	
@@ -135,19 +144,14 @@ namespace CustomInputManager
 		{
 			int max = (int)KeyCode.JoystickButton0;
 
-
-			for(int i = 0; i < m_keys.Length; i++)
-			{
+			for(int i = 0; i < m_keys.Length; i++) {
 				KeyCode k = m_keys[i];
+				
 				if((int)k >= max)
 					break;
 
-				
-				if(Input.GetKeyDown(k))
-				{
-					if(m_scanHandler(ScanResult.KeyScanResult(k)))
-					{
-					
+				if(Input.GetKeyDown(k)) {
+					if(m_scanHandler(ScanResult.KeyScanResult(k))) {
 						return EndScan();
 					}
 				}
@@ -156,18 +160,19 @@ namespace CustomInputManager
 			return false;
 		}
 
-		bool ScanJoystickButton()
+		
+		
+
+		bool ScanJoystickButton(int numJoysticks)
 		{
 			int gamepadButtons = 14;
-			for(int i = 0; i < gamepadButtons; i++)
-			{
+			for(int i = 0; i < gamepadButtons; i++) {
 				GamepadButton button = (GamepadButton)i;
-				for (int x = 0; x < InputBinding.MAX_JOYSTICKS; x++) {
-
-					if(InputManager.Gamepad.GetButtonDown(button, x))
-					{
-						if(m_scanHandler(ScanResult.GamepadButtonResult(button)))
-						{
+				// for (int x = 0; x < InputBinding.MAX_JOYSTICKS; x++) {
+				for (int x = 0; x < numJoysticks; x++) {
+				
+					if(InputManager.Gamepad.GetButtonDown(button, x)) {
+						if(m_scanHandler(ScanResult.GamepadButtonResult(button))) {
 							return EndScan();
 						}
 					}
@@ -176,18 +181,19 @@ namespace CustomInputManager
 			return false;
 		}
 
-		bool ScanJoystickAxis()
+		bool ScanJoystickAxis(int numJoysticks)
 		{
 			int axes = 8;
-			for(int i = 0; i < axes; i++) 
-			{
+			for(int i = 0; i < axes; i++) {
 				GamepadAxis axis = (GamepadAxis)i;
-				for (int x = 0; x < InputBinding.MAX_JOYSTICKS; x++) {
-					float axisRaw = InputManager.Gamepad.GetAxisRaw(axis, x);
-					if(Mathf.Abs(axisRaw) >= 1.0f)
-					{
-						if(m_scanHandler(ScanResult.GamepadAxisResult(axis, axisRaw)))
-						{
+				
+				// for (int x = 0; x < InputBinding.MAX_JOYSTICKS; x++) {
+				for (int x = 0; x < numJoysticks; x++) {
+					
+					float axisRaw = InputManager.Gamepad.GetAxisRaw(axis, x, .2f);
+
+					if(Mathf.Abs(axisRaw) >= 1.0f) {
+						if(m_scanHandler(ScanResult.GamepadAxisResult(axis, axisRaw))) {
 							return EndScan();
 						}
 					}
@@ -196,14 +202,10 @@ namespace CustomInputManager
 			return false;
 		}
 
-		bool ScanMouseAxis()
-		{
-			for(int i = 0; i < m_rawMouseAxes.Length; i++)
-			{
-				if(Mathf.Abs(Input.GetAxis(m_rawMouseAxes[i])) > 0.0f)
-				{
-					if(m_scanHandler(ScanResult.MouseScanResult(i)))
-					{
+		bool ScanMouseAxis() {
+			for(int i = 0; i < m_rawMouseAxes.Length; i++) {
+				if(Mathf.Abs(Input.GetAxis(m_rawMouseAxes[i])) > 0.0f) {
+					if(m_scanHandler(ScanResult.MouseScanResult(i))) {
 						return EndScan();
 					}
 				}
@@ -211,8 +213,7 @@ namespace CustomInputManager
 			return false;
 		}
 
-		bool HasFlag(ScanFlags flag)
-		{
+		bool HasFlag(ScanFlags flag) {
 			return ((int)scanFlags & (int)flag) != 0;
 		}
 	}

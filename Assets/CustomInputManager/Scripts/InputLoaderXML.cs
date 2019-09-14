@@ -44,7 +44,6 @@ namespace CustomInputManager
 				{
 					XmlDocument doc = new XmlDocument();
 					doc.Load(reader);
-
 					return doc;
 				}
 			}
@@ -66,7 +65,9 @@ namespace CustomInputManager
 			return null;
 		}
 
-		public SaveData Load()
+
+		public List<ControlScheme> Load()
+		// public SaveData Load()
 		{
 			XmlDocument doc = CreateXmlDocument();
 			if(doc != null)
@@ -74,7 +75,9 @@ namespace CustomInputManager
 				return Load_V2(doc);
 			}
 
-			return new SaveData();
+			Debug.LogError("couldnt load xml doc");
+
+			return null;// new SaveData();
 		}
 
 		public ControlScheme Load(string schemeName)
@@ -88,19 +91,24 @@ namespace CustomInputManager
 		}
 
 		#region [V2]
-		private SaveData Load_V2(XmlDocument doc)
+		// private SaveData Load_V2(XmlDocument doc)
+		List<ControlScheme> Load_V2(XmlDocument doc)
 		{
-			SaveData saveData = new SaveData();
+			// SaveData saveData = new SaveData();
+			List<ControlScheme> saveData = new List<ControlScheme>();
+
 			var root = doc.DocumentElement;
 
-			for (int i = 0; i < InputManager.maxPlayers; i++) {
-				saveData.playerSchemes[i] = ReadNode(SelectSingleNode(root, "PlayerScheme"+i));
-			}
+			// for (int i = 0; i < InputManager.maxPlayers; i++) {
+			// 	saveData.playerSchemes[i] = ReadNode(SelectSingleNode(root, "PlayerScheme"+i));
+			// }
 				
 			var schemeNodes = SelectNodes(root, "ControlScheme");
 			foreach(XmlNode node in schemeNodes)
 			{
-				saveData.ControlSchemes.Add(ReadControlScheme_V2(node));
+				// saveData.ControlSchemes.Add(ReadControlScheme_V2(node));
+				saveData.Add(ReadControlScheme_V2(node));
+
 			}
 
 			return saveData;
@@ -137,7 +145,6 @@ namespace CustomInputManager
 			{
 				ReadInputAction_V2(scheme, child);
 			}
-
 			return scheme;
 		}
 
@@ -145,9 +152,9 @@ namespace CustomInputManager
 		{
 			string name = ReadAttribute(node, "name", "Unnamed Action");
 			string displayName = ReadAttribute(node, "displayName", name);
-			bool rebindable =  ReadAsBool(node.FirstChild);
+			// bool rebindable =  ReadAsBool(node.FirstChild);
 
-			InputAction action = scheme.CreateNewAction(name, displayName, rebindable);
+			InputAction action = scheme.CreateNewAction(name, displayName);//, rebindable);
 			var bindingNodes = SelectNodes(node, "Binding");
 			foreach(XmlNode child in bindingNodes)
 			{
@@ -205,11 +212,25 @@ namespace CustomInputManager
 					binding.Sensitivity = ReadAsFloat(child, 1.0f);
 					break;
 				case "Snap":
-					binding.Snap = ReadAsBool(child);
+					binding.SnapWhenReadAsAxis = ReadAsBool(child);
 					break;
 				case "Invert":
-					binding.Invert = ReadAsBool(child);
+					binding.InvertWhenReadAsAxis = ReadAsBool(child);
 					break;
+
+				case "UseNeg":
+					binding.useNegativeAxisForButton = ReadAsBool(child);
+					break;
+				case "Rebindable":
+					binding.rebindable = ReadAsBool(child);
+					break;
+				case "SensitivityEditable":
+					binding.sensitivityEditable = ReadAsBool(child);
+					break;
+				case "InvertEditable":
+					binding.invertEditable = ReadAsBool(child);
+					break;
+	
 				case "Type":
 					binding.Type = StringToInputType(child.InnerText);
 					break;
@@ -281,7 +302,7 @@ namespace CustomInputManager
 		private bool ReadAsBool(XmlNode node, bool defValue = false)
 		{
 			bool value = false;
-			if(bool.TryParse(node.InnerText, out value))
+			if(bool.TryParse(node.InnerText.ToLower(), out value))
 				return value;
 
 			return defValue;

@@ -21,9 +21,6 @@ namespace CustomInputManager.Examples
 		public float sensitivityX = 15F;
 		public float sensitivityY = 15F;
 
-		public float minimumX = -360F;
-		public float maximumX = 360F;
-
 		public float minimumY = -60F;
 		public float maximumY = 60F;
 
@@ -36,6 +33,18 @@ namespace CustomInputManager.Examples
 				GetComponent<Rigidbody>().freezeRotation = true;
 		}
 
+		int _MouseX, _MouseY;
+        void InitializeInputNameKeys () {
+            _MouseX = InputManager.Name2Key("MouseX");
+            _MouseY = InputManager.Name2Key("MouseY");
+            
+        }
+
+
+		void OnEnable () {
+			InitializeInputNameKeys();
+		}
+
 		private void Update()
 		{
 			if(GameManager.IsPaused)
@@ -43,20 +52,20 @@ namespace CustomInputManager.Examples
 
 			if (axes == RotationAxes.MouseXAndY)
 			{
-				float rotationX = transform.localEulerAngles.y + InputManager.GetAxis("LookHorizontal") * sensitivityX;
+				float rotationX = transform.localEulerAngles.y + InputManager.GetAxis(_MouseX) * sensitivityX;
 				
-				rotationY += InputManager.GetAxis("LookVertical") * sensitivityY;
+				rotationY += InputManager.GetAxis(_MouseY) * sensitivityY;
 				rotationY = Mathf.Clamp (rotationY, minimumY, maximumY);
 				
 				transform.localEulerAngles = new Vector3(-rotationY, rotationX, 0);
 			}
 			else if (axes == RotationAxes.MouseX)
 			{
-				transform.Rotate(0, InputManager.GetAxis("LookHorizontal") * sensitivityX, 0);
+				transform.Rotate(0, InputManager.GetAxis(_MouseX) * sensitivityX, 0);
 			}
 			else
 			{
-				rotationY += InputManager.GetAxis("LookVertical") * sensitivityY;
+				rotationY += InputManager.GetAxis(_MouseY) * sensitivityY;
 				rotationY = Mathf.Clamp (rotationY, minimumY, maximumY);
 				
 				transform.localEulerAngles = new Vector3(-rotationY, transform.localEulerAngles.y, 0);

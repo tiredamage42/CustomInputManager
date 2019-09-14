@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 using Syd.UI;
 using UnityEngine.UI;
 
@@ -15,263 +14,118 @@ namespace CustomInputManager.Examples
 	*/
 	public class RebindInputButton : MonoBehaviour
 	{
-		[SerializeField] int m_bindingIndex = 0;
-		[HideInInspector] public string actionName, m_controlSchemeName;
-        [HideInInspector] public UIButtonProfile normalProfile, scanningProfile;
-		bool m_changePositiveKey;
+		UIButtonProfile normalProfile, scanningProfile;
 		UIButton[] uIButtons;
 
-		protected bool GetValues (out InputAction inputAction, out InputBinding inputBinding) {
-			inputAction = InputManager.GetAction(m_controlSchemeName, actionName);
-			inputBinding = null;
-			if (inputAction != null) {
-				inputBinding = inputAction.GetBinding(m_bindingIndex);
-			}
-			if (inputAction == null || inputBinding == null) {
-				Debug.LogErrorFormat("Control scheme '{0}' does not exist or input action '{1}' does not exist", m_controlSchemeName, actionName);
-                return false;
-			}
-            return true;
+		InputBinding inputBinding;
+		InputAction inputAction;
+
+		UIButton negativeButton { get { return uIButtons[0]; } }
+		UIButton positiveButton { get { return uIButtons[1]; } }
+
+		void ResetNormalButtonProfiles () {
+			for (int i = 0; i < uIButtons.Length; i++) uIButtons[i].profile = normalProfile;
 		}
 
-		public void Initialize () {
+		public void Initialize (InputBinding inputBinding, InputAction inputAction, UIButtonProfile normalProfile, UIButtonProfile scanningProfile) {
+			this.inputBinding = inputBinding;
+			this.inputAction = inputAction;
+			this.normalProfile = normalProfile;
+			this.scanningProfile = scanningProfile;
+
 			RefreshText();
 
-			InputBinding inputBinding;
-			InputAction inputAction;
-			if (!GetValues(out inputAction, out inputBinding)) {
-				return;
-			}
-
 			Toggle invertToggle = GetComponentInChildren<Toggle>();
-			Slider sensitivitySlider = GetComponentInChildren<Slider>();
 
 			Text displayNameText = GetComponentInChildren<Text>();
 			displayNameText.text = inputAction.displayName;
-			displayNameText.color = uIButtons[0].profile.textColor;
+			displayNameText.color = negativeButton.profile.textColor;
+
+			ResetNormalButtonProfiles();
+			
+			GameObject axisControlSection = invertToggle.transform.parent.gameObject;
+			bool isAxis = inputBinding.Type == InputType.DigitalAxis || inputBinding.Type == InputType.GamepadAxis || inputBinding.Type == InputType.MouseAxis;
+			axisControlSection.SetActive(isAxis && (inputBinding.invertEditable || inputBinding.sensitivityEditable));
 
 			
-			if (inputBinding.Type != InputType.DigitalAxis && inputBinding.Type != InputType.GamepadAxis && inputBinding.Type != InputType.MouseAxis) {
-				invertToggle.transform.parent.gameObject.SetActive(false);
-				uIButtons[1].gameObject.SetActive(false);
-			}
-			else {
-				if (inputBinding.Type == InputType.MouseAxis) {
-					uIButtons[0].gameObject.SetActive(false);
-				}
+			// cnat rebind mouse axis
+			negativeButton.gameObject.SetActive(inputBinding.Type != InputType.MouseAxis && inputBinding.rebindable);
+			
+			// only digital axes can be rebound with different keys per +/-
+			positiveButton.gameObject.SetActive(inputBinding.Type == InputType.DigitalAxis  && inputBinding.rebindable);
+			
 
-				if (inputBinding.Type != InputType.DigitalAxis) {
-					uIButtons[1].gameObject.SetActive(false);
+			if (axisControlSection.activeSelf) {
+				if (inputBinding.invertEditable) {
+					invertToggle.onValueChanged.AddListener( OnInvertChanged );
+					invertToggle.isOn = inputBinding.InvertWhenReadAsAxis;
 				}
 				else {
-					uIButtons[1].onClick += OnClickPositive;
-					uIButtons[1].profile = normalProfile;
+					invertToggle.gameObject.SetActive(false);
+				}
+				
+				Slider sensitivitySlider = GetComponentInChildren<Slider>();
+				if (inputBinding.sensitivityEditable) {
+					sensitivitySlider.onValueChanged.AddListener( OnSensitivityChange );
+					sensitivitySlider.value = inputBinding.Sensitivity;
+				}
+				else {
+					sensitivitySlider.gameObject.SetActive(false);
 				}
 
-				invertToggle.onValueChanged.AddListener( OnInvertChanged );
-				sensitivitySlider.onValueChanged.AddListener( OnSensitivityChange );
-				
-				invertToggle.isOn = inputBinding.Invert;
-				sensitivitySlider.value = inputBinding.Sensitivity;
-			}
-			
-			if (inputBinding.Type != InputType.MouseAxis) {
-		
-				uIButtons[0].onClick += OnClickNegative;
-				uIButtons[0].profile = normalProfile;
 			}
 
+			if (negativeButton.gameObject.activeSelf) negativeButton.onClick += OnClickNegative;
+			if (positiveButton.gameObject.activeSelf) positiveButton.onClick += OnClickPositive;
 		}
-		
 		
 		void Awake()
 		{
 			uIButtons = GetComponentsInChildren<UIButton>();
 		}
 
-		void OnClickNegative()
-		{
-			if(!InputManager.IsScanning)
-			{
-				StartCoroutine(StartInputScanDelayedNegativeOrDefault());
+		string GetButtonPrefix (InputBinding inputBinding, bool positive) {
+			return inputBinding.Type != InputType.DigitalAxis ? "" : "( " + (positive ? "+" : "-") + " ) ";
+		}
+
+		void OnClick (InputBinding inputBinding, UIButton button, bool changePositive) {
+			if (InputRebinding.OnStartRebind(inputBinding, changePositive, OnStopScan)) {
+				// override ui input
+				UIUtils.OverrideUIInputControl();
+				// update button visual
+				button.profile = scanningProfile;
+				button.text.text = GetButtonPrefix(inputBinding, changePositive) + "...";
 			}
 		}
+
+		void OnClickNegative() {
+			OnClick(inputBinding, negativeButton, false);
+		}
+
 		void OnClickPositive() {
-			if(!InputManager.IsScanning)
-			{
-				StartCoroutine(StartInputScanDelayedPositive());
-			}
+			OnClick(inputBinding, positiveButton, true);
 		}
 
 		void OnSensitivityChange (float value) {
-			InputBinding inputBinding;
-			if (!GetValues(out _, out inputBinding)) {
-				return;
-			}
 			inputBinding.Sensitivity = value;
+			InputRebinding.SaveRebinds();
 		}
-
-		void OnInvertChanged(bool value)
-		{
-			InputBinding inputBinding;
-			if (!GetValues(out _, out inputBinding)) {
-				return;
-			}
-			inputBinding.Invert = value;
+		void OnInvertChanged(bool value) {
+			inputBinding.InvertWhenReadAsAxis = value;
+			InputRebinding.SaveRebinds();
 		}
-
 
 		public void RefreshText () {
-			InputBinding inputBinding;
-			if (!GetValues(out _, out inputBinding)) {
-				return;
-			}
-			
-			uIButtons[0].text.text = (inputBinding.Type != InputType.DigitalAxis ? "" : "( - ) ") + inputBinding.GetAsString(false);
-			uIButtons[0].profile = normalProfile;
-
-			if (inputBinding.Type == InputType.DigitalAxis) {
-				uIButtons[1].text.text = "( + ) " + inputBinding.GetAsString(true);
-				uIButtons[1].profile = normalProfile;
-			}
+			ResetNormalButtonProfiles();
+			for (int i = 0; i < 2; i++) 
+				if (uIButtons[i].gameObject.activeSelf) 
+					uIButtons[i].text.text = GetButtonPrefix(inputBinding, i == 1) + inputBinding.GetAsString(i == 1);
 		}
 
 		void OnStopScan() {
+			InputRebinding.SaveRebinds();
 			RefreshText();
 			UIUtils.RestoreUIInputControl();
-		}
-
-
-			
-		IEnumerator StartInputScanDelayedNegativeOrDefault()
-		{
-			InputBinding inputBinding;
-			if (GetValues(out _, out inputBinding)) {
-
-				// override ui input
-				UIUtils.OverrideUIInputControl();
-				
-				// update button visual
-				uIButtons[0].profile = scanningProfile;
-				uIButtons[0].text.text = (inputBinding.Type != InputType.DigitalAxis ? "" : "( - ) ") + "...";
-
-
-
-				yield return null; // delay before scanning
-
-				if (inputBinding.Type == InputType.KeyButton || inputBinding.Type == InputType.DigitalAxis) {
-					m_changePositiveKey = inputBinding.Type != InputType.DigitalAxis;
-						
-					InputManager.StartInputScan(ScanFlags.Key, HandleKeyScan, OnStopScan);	
-					
-				}
-				else if (inputBinding.Type == InputType.GamepadAxis) {
-					InputManager.StartInputScan(ScanFlags.JoystickAxis, HandleJoystickAxisScan, OnStopScan);
-				}
-				else if (inputBinding.Type == InputType.GamepadButton || inputBinding.Type == InputType.GamepadAnalogButton) {
-					ScanFlags flags = ScanFlags.JoystickButton;
-					flags |= ScanFlags.JoystickAxis;
-					InputManager.StartInputScan(flags, HandleJoystickButtonScan, OnStopScan);	
-				}
-			}
-		}
-		IEnumerator StartInputScanDelayedPositive()
-		{
-			InputBinding inputBinding;
-			if (GetValues(out _, out inputBinding)) {
-
-				if (inputBinding.Type == InputType.DigitalAxis) {
-				
-					// override ui input
-					UIUtils.OverrideUIInputControl();
-	
-					// update button visual
-					uIButtons[1].profile = scanningProfile;
-					uIButtons[1].text.text = "( + ) ...";
-
-					m_changePositiveKey = true;
-					
-					yield return null; // delay before scanning
-
-					InputManager.StartInputScan(ScanFlags.Key, HandleKeyScan, OnStopScan);	
-				}
-			}
-		}
-
-
-		//	When you return false you tell the InputManager that it should keep scaning for other keys
-		bool HandleKeyScan(ScanResult result)
-		{
-			if(IsKeyValid(result.keyCode) && result.keyCode != KeyCode.None)
-			{
-				InputBinding inputBinding;
-				GetValues(out _, out inputBinding);
-				//	If the key is KeyCode.Backspace clear the current binding
-				KeyCode Key = (result.keyCode == KeyCode.Backspace) ? KeyCode.None : result.keyCode;
-				if(m_changePositiveKey)
-					inputBinding.Positive = Key;
-				else
-					inputBinding.Negative = Key;
-				return true;
-			}
-			return false;
-		}
-
-
-		bool IsKeyValid(KeyCode key)
-		{
-			bool isValid = true;
-			if((int)key >= (int)KeyCode.JoystickButton0) {
-				isValid = false;
-			}
-			else if(key == KeyCode.LeftApple || key == KeyCode.RightApple)
-				isValid = false;
-			else if(key == KeyCode.LeftWindows || key == KeyCode.RightWindows)
-				isValid = false;
-
-			return isValid;
-		}
-
-				
-		//	When you return false you tell the InputManager that it should keep scaning for other keys
-		private bool HandleJoystickButtonScan(ScanResult result)
-		{
-			
-			if(result.ScanFlags == ScanFlags.JoystickButton)
-			{
-				if (result.gamepadButton != GamepadButton.None)
-				{
-					InputBinding inputBinding;
-					GetValues(out _, out inputBinding);
-					inputBinding.Type = InputType.GamepadButton;
-					inputBinding.GamepadButton = result.gamepadButton;
-					return true;
-				}
-			}
-			else
-			{
-				if(result.gamepadAxis != GamepadAxis.None)
-				{
-					InputBinding inputBinding;
-					GetValues(out _, out inputBinding);
-					inputBinding.Type = InputType.GamepadAnalogButton;
-					inputBinding.Invert = result.axisValue < 0.0f;
-					inputBinding.GamepadAxis = result.gamepadAxis;
-					return true;
-				}
-			}
-			return false;
-		}
-		//	When you return false you tell the InputManager that it should keep scaning for other keys
-		bool HandleJoystickAxisScan(ScanResult result)
-		{
-			if(result.gamepadAxis != GamepadAxis.None) {
-				InputBinding inputBinding;
-				GetValues(out _, out inputBinding);
-				inputBinding.GamepadAxis = result.gamepadAxis;
-				return true;
-			}
-			return false;
-		}		
+		}	
 	}
 }

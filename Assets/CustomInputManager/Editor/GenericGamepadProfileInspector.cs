@@ -7,6 +7,50 @@ namespace CustomInputManagerEditor.IO
     [CustomEditor(typeof(GenericGamepadProfile))]
     public class GenericGamepadProfileInspector : Editor
     {
+        private static string[] m_buttonNames, m_axisNames;
+		
+        public static string[] GenerateJoystickButtonNames()
+        {
+            if(m_buttonNames == null || m_buttonNames.Length != InputBinding.MAX_JOYSTICK_BUTTONS)
+            {
+                m_buttonNames = new string[InputBinding.MAX_JOYSTICK_BUTTONS];
+                for(int i = 0; i < InputBinding.MAX_JOYSTICK_BUTTONS; i++)
+                {
+                    m_buttonNames[i] = "Joystick Button " + i;
+                }
+            }
+
+            return m_buttonNames;
+        }
+
+		public static string[] GenerateJoystickAxisNames()
+		{
+			if(m_axisNames == null || m_axisNames.Length != InputBinding.MAX_JOYSTICK_AXES)
+			{
+				m_axisNames = new string[InputBinding.MAX_JOYSTICK_AXES];
+				for(int i = 0; i < InputBinding.MAX_JOYSTICK_AXES; i++)
+				{
+					if(i == 0)
+						m_axisNames[i] = "X";
+					else if(i == 1)
+						m_axisNames[i] = "Y";
+					else if(i == 2)
+						m_axisNames[i] = "3rd axis (Joysticks and Scrollwheel)";
+					else if(i == 21)
+						m_axisNames[i] = "21st axis (Joysticks)";
+					else if(i == 22)
+						m_axisNames[i] = "22nd axis (Joysticks)";
+					else if(i == 23)
+						m_axisNames[i] = "23rd axis (Joysticks)";
+					else
+						m_axisNames[i] = string.Format("{0}th axis (Joysticks)", i + 1);
+				}
+			}
+
+			return m_axisNames;
+		}
+
+
         private SerializedProperty m_dpadType;
         private SerializedProperty m_leftStickButton;
         private SerializedProperty m_rightStickButton;
@@ -30,8 +74,10 @@ namespace CustomInputManagerEditor.IO
         private SerializedProperty m_dpadYAxis;
         private SerializedProperty m_leftTriggerAxis;
         private SerializedProperty m_rightTriggerAxis;
-        private string[] m_buttonNames;
-        private string[] m_axisNames;
+        
+        SerializedProperty unityJoystickName;
+        SerializedProperty platforms;
+        
 
         private void OnEnable()
         {
@@ -59,16 +105,22 @@ namespace CustomInputManagerEditor.IO
             m_leftTriggerAxis = serializedObject.FindProperty("m_leftTriggerAxis");
             m_rightTriggerAxis = serializedObject.FindProperty("m_rightTriggerAxis");
 
-            m_buttonNames = EditorToolbox.GenerateJoystickButtonNames();
-            m_axisNames = EditorToolbox.GenerateJoystickAxisNames();
+            unityJoystickName = serializedObject.FindProperty("unityJoystickName");
+            platforms = serializedObject.FindProperty("platforms");
+
+            m_buttonNames = GenerateJoystickButtonNames();
+            m_axisNames = GenerateJoystickAxisNames();
         }
+
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
             EditorGUILayout.Space();
 
-            
+            EditorGUILayout.PropertyField(unityJoystickName);
+            EditorGUILayout.PropertyField(platforms, true);
+
             //  SETTINGS
             DrawHeader("Settings");
             EditorGUILayout.PropertyField(m_dpadType);
@@ -104,7 +156,6 @@ namespace CustomInputManagerEditor.IO
 
             DrawAxisField(m_leftTriggerAxis);
             DrawAxisField(m_rightTriggerAxis);
-            
             
             if(m_dpadType.enumValueIndex == (int)GamepadDPadType.Axis)
             {

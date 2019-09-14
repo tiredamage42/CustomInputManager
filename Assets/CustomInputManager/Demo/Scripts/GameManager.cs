@@ -1,5 +1,4 @@
 
-using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,12 +8,8 @@ using CustomInputManager;
 public class GameManager : MonoBehaviour 
 {
 	public UIMenu pauseMenu;
-
 	static GameManager m_instance;
-	public float defaultTimescale = 1.0f;
-
-	
-	public bool isPaused;
+	[HideInInspector] public bool isPaused;
 	public static bool IsPaused { get { return m_instance.isPaused; } }
 	
 	public static void Pause()
@@ -33,7 +28,7 @@ public class GameManager : MonoBehaviour
 	}
 	IEnumerator _Unpause () {
 		yield return null;
-		Time.timeScale = defaultTimescale;	
+		Time.timeScale = 1.0f;	
 		pauseMenu.Close();
 	}
 
@@ -46,25 +41,34 @@ public class GameManager : MonoBehaviour
 			m_instance.StartCoroutine(m_instance._Unpause());
 		}
 	}
-	
-	void Awake()
-	{
-		if(m_instance != null)
-		{
-			Destroy(this);
-		}
-		else
-		{
-			m_instance = this;
-			SceneManager.sceneLoaded += HandleLevelWasLoaded;
-			DontDestroyOnLoad(gameObject);
-			pauseMenu.onClose += UnPause;
-		}
-	}
 
-	void Update () {
+		int _PauseKey;
+		void InitializeInputNameKeys () {
+			_PauseKey = InputManager.Name2Key("Pause");
+		}
+
+		void OnEnable () {
+			InitializeInputNameKeys();
+		}
+	
+		void Awake()
+		{
+			if(m_instance != null)
+			{
+				Destroy(this);
+			}
+			else
+			{
+				m_instance = this;
+				SceneManager.sceneLoaded += HandleLevelWasLoaded;
+				DontDestroyOnLoad(gameObject);
+				pauseMenu.onClose += UnPause;
+			}
+		}
+
+		void Update () {
 			if (!isPaused) {
-				if(InputManager.GetButtonDown("Pause"))
+				if(InputManager.GetButtonDown(_PauseKey))
 				{
 					Pause();
 					pauseMenu.Open();

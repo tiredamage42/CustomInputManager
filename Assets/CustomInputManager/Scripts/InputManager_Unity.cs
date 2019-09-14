@@ -53,119 +53,75 @@ namespace CustomInputManager
 			return Input.GetAccelerationEvent(index);
 		}
 		
-		public static float GetAxis(string name, int playerID=0)
+		public static float GetAxis(int key, int playerID=0)
 		{
-			InputAction action = GetAction(playerID, name);
-			if(action != null)
-			{
-				return action.GetAxis(playerID);
-			}
-			else
-			{
-				Debug.LogError(string.Format("An axis named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
-				return 0.0f;
-			}
+			InputAction action = GetAction(playerID, key);
+			if(action != null) return action.GetAxis(playerID);
+
+			Debug.LogError(string.Format("An axis key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
+			
+			// Debug.LogError(string.Format("An axis named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
+			return 0.0f;
 		}
 		
-		public static float GetAxisRaw(string name, int playerID=0)
+		public static float GetAxisRaw(int key, int playerID=0)
 		{
-			InputAction action = GetAction(playerID, name);
-			if(action != null)
-			{
-				return action.GetAxisRaw(playerID);
-			}
-			else
-			{
-                Debug.LogError(string.Format("An axis named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
-                return 0.0f;
-			}
+			InputAction action = GetAction(playerID, key);
+			if(action != null) return action.GetAxisRaw(playerID);
+
+			Debug.LogError(string.Format("An axis key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
+			
+			// Debug.LogError(string.Format("An axis named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
+			return 0.0f;
 		}
 		
-		public static bool GetButton(string name, int playerID=0)
+		public static bool GetButton(int key, int playerID=0)
 		{
-			InputAction action = GetAction(playerID, name);
-			if(action != null)
-			{
-				return action.GetButton(playerID);
-			}
-			else
-			{
-				Debug.LogError(string.Format("An button named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
-				return false;
-			}
+			InputAction action = GetAction(playerID, key);
+			if(action != null) return action.GetButton(playerID);
+
+			Debug.LogError(string.Format("An button key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
+			
+			// Debug.LogError(string.Format("An button named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
+			return false;
 		}
 		
-		public static bool GetButtonDown(string name, int playerID=0)
+		public static bool GetButtonDown(int key, int playerID=0)
 		{
-			InputAction action = GetAction(playerID, name);
-			if(action != null)
-			{
-				return action.GetButtonDown(playerID);
-			}
-			else
-			{
-                Debug.LogError(string.Format("An button named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
-                return false;
-			}
+			InputAction action = GetAction(playerID, key);
+			if(action != null) return action.GetButtonDown(playerID);
+			
+			Debug.LogError(string.Format("An button key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
+			
+			// Debug.LogError(string.Format("An button named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
+			return false;
 		}
 		
-		public static bool GetButtonUp(string name, int playerID=0)
+		public static bool GetButtonUp(int key, int playerID=0)
 		{
-			InputAction action = GetAction(playerID, name);
-			if(action != null)
-			{
-				return action.GetButtonUp(playerID);
-			}
-			else
-			{
-                Debug.LogError(string.Format("An button named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
-                return false;
-			}
+			InputAction action = GetAction(playerID, key);
+			if(action != null) return action.GetButtonUp(playerID);
+			
+			Debug.LogError(string.Format("An button key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
+			
+			// Debug.LogError(string.Format("An button named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
+			return false;
 		}
+
+		public static float GetAxis(string name, int playerID=0) { return GetAxis(Name2Key(name, playerID), playerID); }
+		public static float GetAxisRaw(string name, int playerID=0) { return GetAxisRaw(Name2Key(name, playerID), playerID); }
+		public static bool GetButton(string name, int playerID=0) { return GetButton(Name2Key(name, playerID), playerID); }
+		public static bool GetButtonDown(string name, int playerID=0) { return GetButtonDown(Name2Key(name, playerID), playerID); }
+		public static bool GetButtonUp(string name, int playerID=0) { return GetButtonUp(Name2Key(name, playerID), playerID); }
 		
-		public static bool GetKey(KeyCode key)
-		{
-			return Input.GetKey(key);
-		}
-		
-		public static bool GetKeyDown(KeyCode key)
-		{
-			return Input.GetKeyDown(key);
-		}
-		
-		public static bool GetKeyUp(KeyCode key)
-		{
-			return Input.GetKeyUp(key);
-		}
-		
-		public static bool GetMouseButton(int index)
-		{
-			return Input.GetMouseButton(index);
-		}
-		
-		public static bool GetMouseButtonDown(int index)
-		{
-			return Input.GetMouseButtonDown(index);
-		}
-		
-		public static bool GetMouseButtonUp(int index)
-		{
-			return Input.GetMouseButtonUp(index);
-		}
-		
-		public static Touch GetTouch(int index)
-		{
-			return Input.GetTouch(index);
-		}
-		
-		public static string[] GetJoystickNames()
-		{
-			return Input.GetJoystickNames();
-		}
-        
-        public static void ResetInputAxes()
-        {
-            Input.ResetInputAxes();
-        }
+		public static bool GetKey(KeyCode key) { return Input.GetKey(key); }
+		public static bool GetKeyDown(KeyCode key) { return Input.GetKeyDown(key); }
+		public static bool GetKeyUp(KeyCode key) { return Input.GetKeyUp(key); }
+		public static bool GetMouseButton(int index) { return Input.GetMouseButton(index); }
+		public static bool GetMouseButtonDown(int index) { return Input.GetMouseButtonDown(index); }
+		public static bool GetMouseButtonUp(int index) { return Input.GetMouseButtonUp(index); }
+		public static Touch GetTouch(int index) { return Input.GetTouch(index); }
+		public static string[] GetJoystickNames() { return Input.GetJoystickNames(); }
+		public static void ResetInputAxes() { Input.ResetInputAxes(); }
 	}
 }

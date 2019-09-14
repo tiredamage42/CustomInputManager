@@ -17,7 +17,6 @@ namespace CustomInputManagerEditor.IO
 		private void OnEnable()
 		{
 			m_inputManager = target as InputManager;
-
 			m_playerDefaults = serializedObject.FindProperty("playerSchemesDefaults");
 			m_createSnapshotInfo = new GUIContent("Create\nSnapshot", "Creates a snapshot of your input configurations which can be restored at a later time(when you exit play-mode for example)");
 		}
@@ -26,33 +25,37 @@ namespace CustomInputManagerEditor.IO
 		{
 			base.OnInspectorGUI();
 			serializedObject.Update();
+			
 			UpdateControlSchemeNames();
 
 			EditorGUILayout.Space();
 
-			for (int i = 0; i < InputManager.maxPlayers; i++) {
-				DrawControlSchemeDropdown(m_playerDefaults.GetArrayElementAtIndex(i), i);
-			}
+			// for (int i = 0; i < InputManager.maxPlayers; i++) {
+			// 	DrawControlSchemeDropdown(m_playerDefaults.GetArrayElementAtIndex(i), i);
+			// }
 
-			
 			EditorGUILayout.Space();
 			GUILayout.BeginHorizontal();
+			
 			GUI.enabled = !InputEditor.IsOpen;
 			if(GUILayout.Button("Input\nEditor", GUILayout.Height(BUTTON_HEIGHT)))
 			{
-				InputEditor.OpenWindow(m_inputManager);
+				InputEditor.OpenWindow();//m_inputManager);
 			}
 			GUI.enabled = true;
+			
 			if(GUILayout.Button(m_createSnapshotInfo, GUILayout.Height(BUTTON_HEIGHT)))
 			{
 				EditorToolbox.CreateSnapshot(m_inputManager);
 			}
+			
 			GUI.enabled = EditorToolbox.CanLoadSnapshot();
 			if(GUILayout.Button("Restore\nSnapshot", GUILayout.Height(BUTTON_HEIGHT)))
 			{
 				EditorToolbox.LoadSnapshot(m_inputManager);
 			}
 			GUI.enabled = true;
+			
 			GUILayout.EndHorizontal();
 
 			serializedObject.ApplyModifiedProperties();
@@ -75,20 +78,20 @@ namespace CustomInputManagerEditor.IO
 			}
 		}
 
-		private void DrawControlSchemeDropdown(SerializedProperty item, int playerID)
-		{
-			int index = FindIndexOfControlScheme(item.stringValue);
-			index = EditorGUILayout.Popup("Player " + playerID + " Default", index, m_controlSchemeNames);
+		// private void DrawControlSchemeDropdown(SerializedProperty item, int playerID)
+		// {
+		// 	int index = FindIndexOfControlScheme(item.stringValue);
+		// 	index = EditorGUILayout.Popup("Player " + playerID + " Default", index, m_controlSchemeNames);
 
-			if(index > 0)
-			{
-				item.stringValue = m_inputManager.ControlSchemes[index - 1].UniqueID;
-			}
-			else
-			{
-				item.stringValue = null;
-			}
-		}
+		// 	if(index > 0)
+		// 	{
+		// 		item.stringValue = m_inputManager.ControlSchemes[index - 1].UniqueID;
+		// 	}
+		// 	else
+		// 	{
+		// 		item.stringValue = null;
+		// 	}
+		// }
 
 		private int FindIndexOfControlScheme(string id)
 		{

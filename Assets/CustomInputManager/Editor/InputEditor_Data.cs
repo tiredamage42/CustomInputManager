@@ -30,7 +30,7 @@ namespace CustomInputManagerEditor.IO
 
 		private enum MoveDirection { Up, Down }
 		private enum FileMenuOptions { OverwriteProjectSettings = 0, CreateSnapshot, LoadSnapshot, Export, Import }
-		private enum EditMenuOptions { NewControlScheme = 0, NewInputAction, Duplicate, Delete, DeleteAll, SelectTarget, Copy, Paste }
+		private enum EditMenuOptions { NewControlScheme = 0, NewInputAction, Duplicate, Delete, DeleteAll, Copy, Paste }
 		private enum ControlSchemeContextMenuOptions { NewInputAction = 0, Duplicate, Delete, MoveUp, MoveDown }
 		private enum InputActionContextMenuOptions { Duplicate, Delete, Copy, Paste, MoveUp, MoveDown }
 		private enum CollectionAction { None, Remove, Add, MoveUp, MoveDown }

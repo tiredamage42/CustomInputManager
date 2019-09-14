@@ -1,10 +1,14 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 namespace CustomInputManager
 {
     [CreateAssetMenu(fileName = "New Gamepad Profile", menuName = "CustomInputManager/Input Manager/Gamepad Profile")]
     public class GenericGamepadProfile : ScriptableObject
     {
+        public string unityJoystickName;
+        public List<GamePadPossiblePlatform> platforms = new List<GamePadPossiblePlatform>();
+
         [SerializeField] private GamepadDPadType m_dpadType = GamepadDPadType.Axis;
         
         [Range(0, InputBinding.MAX_JOYSTICK_BUTTONS - 1)] [SerializeField] private int m_leftStickButton = 0;
