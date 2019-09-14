@@ -4,7 +4,6 @@ using System.Collections.Generic;
 
 namespace CustomInputManager
 {
-
     public enum GamepadAxis
 	{
 		LeftThumbstickX, LeftThumbstickY,
@@ -109,9 +108,10 @@ namespace CustomInputManager
             this.maxJoysticks = maxJoysticks;
 
             gamepadProfilesPerGamepad = new GenericGamepadProfile[maxJoysticks];
-            m_dpadState = new DPadState[maxJoysticks];
             gamepadNames = new string[maxJoysticks];
+            gamepadConnectionStates = new bool[maxJoysticks];
 
+            m_dpadState = new DPadState[maxJoysticks];
             for (int i = 0; i < maxJoysticks; i++) {
                 m_dpadState[i] = DPadState.Empty;
             }
@@ -121,7 +121,9 @@ namespace CustomInputManager
         }
 
         string[] gamepadNames;
+        bool[] gamepadConnectionStates;
 
+        
         public string GamepadName (int gamepad) {
             return gamepadNames[gamepad];
         }
@@ -134,12 +136,17 @@ namespace CustomInputManager
 
                 int ln = joystickNames.Length;
                 for(int i = 0; i < maxJoysticks; i++) {
+
                     bool connected = ln > i && !string.IsNullOrEmpty(joystickNames[i]);
 
+                    bool wasConnected = gamepadConnectionStates[i];
+                    gamepadConnectionStates[i] = connected;
+                    
                     gamepadNames[i] = connected ? joystickNames[i] : "Not Connected";
 
                     if (connected) {
-                        if (gamepadProfilesPerGamepad[i] == null){
+                        if (!wasConnected){
+                        // if (gamepadProfilesPerGamepad[i] == null){
                             gamepadProfilesPerGamepad[i] = GetProfileForJoystickName(joystickNames[i], allGamepadProfiles);
                             if (gamepadProfilesPerGamepad[i] == null) {
                                 gamepadNames[i] = joystickNames[i] + " [No Profile]";
@@ -169,6 +176,8 @@ namespace CustomInputManager
         }
 
         public bool GamepadAvailable (int gamepad, out GenericGamepadProfile profile) {
+            profile = null;
+            if (!gamepadConnectionStates[gamepad]) return false;
             if (!CheckForGamepadProfile(gamepad, out profile)) return false;
             return true;
         }
@@ -190,8 +199,7 @@ namespace CustomInputManager
                 {
                     // mimic button values
                     UpdateDPadButton(i, profile);
-                }
-                
+                }   
             }
         }
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 namespace CustomInputManager
 {
-	
 	public partial class InputManager : MonoBehaviour
 	{
 		public GamepadHandler gamepad;
@@ -25,6 +24,9 @@ namespace CustomInputManager
 		public int numPlayers = 2;
 
 
+		static string customControlBindingsPath { get { return Application.persistentDataPath + "/InputManagerOverride.xml"; } }
+
+
 		private void Awake()
 		{
 			if(m_instance == null)
@@ -40,7 +42,12 @@ namespace CustomInputManager
 
 				// try and load custom runtime bindings
 				if (!LoadOverridenControls()) {
+
+					Debug.Log("Couldnt find custom control bindings, loading defaults...");
 					ResetSchemes(defaultInputsXML);
+				}
+				else {
+					Debug.Log("Loaded custom control bindings from :: " + customControlBindingsPath);
 				}
 			}
 			else
@@ -86,9 +93,6 @@ namespace CustomInputManager
 
 		private void PopulateLookupTables()
 		{
-
-			Debug.Log("Initializing scheme lookup " + m_controlSchemes.Count);
-
 			m_schemeLookup.Clear();
 			foreach(ControlScheme scheme in m_controlSchemes)
 			{
@@ -100,7 +104,6 @@ namespace CustomInputManager
 		{
 			float unscaledDeltaTime = Time.unscaledDeltaTime;
 			gamepad.OnUpdate(unscaledDeltaTime);
-
 
 			for (int i = 0; i < m_controlSchemes.Count; i++) {
 				m_controlSchemes[i].Update(unscaledDeltaTime);
@@ -279,7 +282,7 @@ namespace CustomInputManager
 		/// </summary>
 		public static void SaveCustomBindings()
 		{
-			Save(Application.persistentDataPath + "/InputManagerOverride.xml");
+			Save(customControlBindingsPath);
 		}
 
 		/// <summary>
@@ -309,7 +312,7 @@ namespace CustomInputManager
 		/// </summary>
 		public static bool LoadOverridenControls()
 		{
-			return Load(Application.persistentDataPath + "/InputManagerOverride.xml");
+			return Load(customControlBindingsPath);
 		}
 
 		/// <summary>
@@ -376,7 +379,6 @@ namespace CustomInputManager
 		{
 			if(inputLoader != null)
 			{
-				// Debug.Log("loading input override... " + Application.persistentDataPath);
 				m_instance.SetSaveData(inputLoader.Load());
 				m_instance.Initialize();
 			}
