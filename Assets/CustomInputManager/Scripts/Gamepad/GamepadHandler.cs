@@ -100,7 +100,6 @@ namespace CustomInputManager
         [SerializeField] private bool m_dpadSnap = true;
 
         DPadState[] m_dpadState;
-        // bool[] m_joystickState;
         string[] m_axisNameLookupTable;
         
         int maxJoysticks;
@@ -109,7 +108,6 @@ namespace CustomInputManager
         {
             this.maxJoysticks = maxJoysticks;
 
-            // m_joystickState = new bool[maxJoysticks];
             gamepadProfilesPerGamepad = new GenericGamepadProfile[maxJoysticks];
             m_dpadState = new DPadState[maxJoysticks];
             gamepadNames = new string[maxJoysticks];
@@ -134,18 +132,13 @@ namespace CustomInputManager
             {
                 string[] joystickNames = InputManager.GetJoystickNames();
 
-                // int l = m_joystickState.Length;
                 int ln = joystickNames.Length;
                 for(int i = 0; i < maxJoysticks; i++) {
-                    // bool wasConnected = m_joystickState[i];
-
                     bool connected = ln > i && !string.IsNullOrEmpty(joystickNames[i]);
 
-                    // m_joystickState[i] = connected;
                     gamepadNames[i] = connected ? joystickNames[i] : "Not Connected";
 
                     if (connected) {
-                        // if (!wasConnected) {
                         if (gamepadProfilesPerGamepad[i] == null){
                             gamepadProfilesPerGamepad[i] = GetProfileForJoystickName(joystickNames[i], allGamepadProfiles);
                             if (gamepadProfilesPerGamepad[i] == null) {
@@ -165,11 +158,6 @@ namespace CustomInputManager
             }
         }
 
-		// public bool GamepadIsConnected(int gamepad)
-        // {
-        //     return m_joystickState[gamepad];
-        // }
-
         void GenerateAxisNameLookupTable() {
             string template = "joy_{0}_axis_{1}";
             m_axisNameLookupTable = new string[maxJoysticks * InputBinding.MAX_JOYSTICK_AXES];
@@ -181,8 +169,6 @@ namespace CustomInputManager
         }
 
         public bool GamepadAvailable (int gamepad, out GenericGamepadProfile profile) {
-            // profile = null;
-            // if (!GamepadIsConnected(gamepad)) return false;
             if (!CheckForGamepadProfile(gamepad, out profile)) return false;
             return true;
         }

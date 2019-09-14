@@ -1,28 +1,5 @@
-
-
-
-/*
-
-	actions:
-		bindings
-	
-	jump
-		gampad a
-		space bar
-
-	fire
-		trigger right
-		enter
-
-
-*/
-
-
-
 using UnityEngine;
-using System;
 using System.Collections.Generic;
-using System.Collections;
 using System.IO;
 namespace CustomInputManager
 {

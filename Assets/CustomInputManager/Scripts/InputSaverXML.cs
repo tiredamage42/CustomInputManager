@@ -11,8 +11,6 @@ namespace CustomInputManager
 	{
 		
 		private string m_filename;
-		// private Stream m_outputStream;
-		// private StringBuilder m_output;
 		
 		public InputSaverXML(string filename)
 		{
@@ -20,29 +18,7 @@ namespace CustomInputManager
 				throw new ArgumentNullException("filename");
 			
 			m_filename = filename;
-			// m_outputStream = null;
-			// m_output = null;
 		}
-
-		// public InputSaverXML(Stream stream)
-		// {
-		// 	if(stream == null)
-		// 		throw new ArgumentNullException("stream");
-			
-		// 	m_filename = null;
-		// 	// m_output = null;
-		// 	m_outputStream = stream;
-		// }
-		
-		// public InputSaverXML(StringBuilder output)
-		// {
-		// 	if(output == null)
-		// 		throw new ArgumentNullException("output");
-			
-		// 	m_filename = null;
-		// 	m_outputStream = null;
-		// 	m_output = output;
-		// }
 
 		private XmlWriter CreateXmlWriter(XmlWriterSettings settings)
 		{
@@ -55,19 +31,11 @@ namespace CustomInputManager
 				return XmlWriter.Create(m_filename, settings);
 #endif
 			}
-			// else if(m_outputStream != null)
-			// {
-			// 	return XmlWriter.Create(m_outputStream, settings);
-			// }
-			// else if(m_output != null)
-			// {
-			// 	return XmlWriter.Create(m_output, settings);
-			// }
-
+			
 			return null;
 		}
 
-		public void Save(List<ControlScheme> controlSchemes)// SaveData saveData)
+		public void Save(List<ControlScheme> controlSchemes)
 		{
 			XmlWriterSettings xmlSettings = new XmlWriterSettings();
 			xmlSettings.Encoding = Encoding.UTF8;
@@ -78,11 +46,7 @@ namespace CustomInputManager
 				writer.WriteStartDocument(true);
 				writer.WriteStartElement("Input");
 				
-				// for (int i = 0; i < InputManager.maxPlayers; i++) {
-				// 	writer.WriteElementString("PlayerScheme"+i, saveData.playerSchemes[i]);
-				// }
-					
-				foreach(ControlScheme scheme in controlSchemes)// saveData.ControlSchemes)
+				foreach(ControlScheme scheme in controlSchemes)
 				{
 					WriteControlScheme(scheme, writer);
 				}
@@ -118,10 +82,7 @@ namespace CustomInputManager
 			writer.WriteStartElement("Action");
 			writer.WriteAttributeString("name", action.Name);
 			writer.WriteAttributeString("displayName", action.displayName);
-			// writer.WriteElementString("rebindable", action.rebindable.ToString().ToLower());
 			
-
-
 			foreach(var binding in action.bindings)
 			{
 				WriteInputBinding(binding, writer);

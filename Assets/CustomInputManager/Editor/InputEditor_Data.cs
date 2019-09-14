@@ -36,18 +36,6 @@ namespace CustomInputManagerEditor.IO
 		private enum CollectionAction { None, Remove, Add, MoveUp, MoveDown }
 		private enum KeyType { Positive = 0, Negative }
 
-		[Serializable] private class SearchResult {
-			public int ControlScheme;
-			public List<int> Actions;
-			public SearchResult() {
-				ControlScheme = 0;
-				Actions = new List<int>();
-			}
-			public SearchResult(int controlScheme, IEnumerable<int> actions) {
-				ControlScheme = controlScheme;
-				Actions = new List<int>(actions);
-			}
-		}
 		
 		[SerializeField] private class Selection {
 			public const int NONE = -1;

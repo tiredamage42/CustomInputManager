@@ -1,8 +1,8 @@
 
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.IMGUI.Controls;
-using System.Linq;
+// using UnityEditor.IMGUI.Controls;
+// using System.Linq;
 using System.Collections.Generic;
 using CustomInputManager;
 // using UnityInputConverter;
@@ -10,52 +10,12 @@ using UnityObject = UnityEngine.Object;
 
 namespace CustomInputManagerEditor.IO
 {
-	// [System.Serializable] public class SearchBar {
-	// 	[SerializeField] private List<SearchResult> m_searchResults;
-	// 	[SerializeField] private string m_searchString = "";
-	// 	private SearchField m_searchField;
-
-	// 	public void OnEnable () {
-	// 		m_searchField = new SearchField();
-	// 		if(m_searchResults == null)
-	// 			m_searchResults = new List<SearchResult>();
-
-	// 	}
-
-	// 	public void UpdateSearchResults(InputManager inputManager)
-	// 	{
-	// 		m_searchResults.Clear();
-
-	// 		if(!string.IsNullOrEmpty(m_searchString))
-	// 		{
-	// 			for(int i = 0; i < inputManager.ControlSchemes.Count; i++)
-	// 			{
-	// 				IEnumerable<int> axes = from a in inputManager.ControlSchemes[i].Actions
-	// 										where (a.Name.IndexOf(m_searchString, System.StringComparison.InvariantCultureIgnoreCase) >= 0)
-	// 										select inputManager.ControlSchemes[i].Actions.IndexOf(a);
-
-	// 				if(axes.Count() > 0)
-	// 				{
-	// 					m_searchResults.Add(new SearchResult(i, axes));
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-		
 		
 	public partial class InputEditor : EditorWindow
 	{
 		#region [Fields]
 		[SerializeField] private InputManager m_inputManager;
 
-		// [SerializeField] private List<SearchResult> m_searchResults;
-		// [SerializeField] private string m_searchString = "";
-		// private SearchField m_searchField;
-		
-		// public SearchBar searchBar = new SearchBar();
-
-		
 		
 		
 		[SerializeField] private Selection m_selection;
@@ -94,11 +54,7 @@ namespace CustomInputManagerEditor.IO
 			m_upButtonContent = new GUIContent(EditorToolbox.GetCustomIcon("input_editor_arrow_up"));
 			m_downButtonContent = new GUIContent(EditorToolbox.GetCustomIcon("input_editor_arrow_down"));
 
-			// searchBar.OnEnable ();
-			// m_searchField = new SearchField();
-			// if(m_searchResults == null)
-			// 	m_searchResults = new List<SearchResult>();
-
+			
 			CreateKeyFields();
 
 			EditorToolbox.ShowStartupWarning();
@@ -227,9 +183,7 @@ namespace CustomInputManagerEditor.IO
 			else
 				editMenu.AddDisabledItem(new GUIContent("Paste"));
 
-			// editMenu.AddSeparator("");
-			// editMenu.AddItem(new GUIContent("Select Target"), false, HandleEditMenuOption, EditMenuOptions.SelectTarget);
-
+			
 			editMenu.DropDown(position);
 		}
 
@@ -253,9 +207,6 @@ namespace CustomInputManagerEditor.IO
 			case EditMenuOptions.DeleteAll:
 				DeleteAll();
 				break;
-			// case EditMenuOptions.SelectTarget:
-			// 	UnityEditor.Selection.activeGameObject = m_inputManager.gameObject;
-			// 	break;
 			case EditMenuOptions.Copy:
 				CopyInputAction();
 				break;
@@ -381,12 +332,7 @@ namespace CustomInputManagerEditor.IO
 		public static InputAction DuplicateInputAction(string name, InputAction source)
 		{
 			InputAction duplicate = new InputAction("_");
-
-
-			
-
 			CopyInputAction(duplicate, source);
-			// duplicate.Copy (source);
 			return duplicate;
 		}
 
@@ -406,10 +352,6 @@ namespace CustomInputManagerEditor.IO
 			InsertNewActionScheme(scheme, m_selection.Action + 1, source.Name + " Copy", source);
 			m_selection.Action++;
 
-			// if(m_searchString.Length > 0)
-			// {
-			// 	UpdateSearchResults();
-			// }
 			Repaint();
 		}
 
@@ -434,10 +376,6 @@ namespace CustomInputManagerEditor.IO
 			m_inputManager.ControlSchemes.Insert(m_selection.ControlScheme + 1, DuplicateControlScheme(source.Name + " Copy", source));
 			m_selection.ControlScheme++;
 
-			// if(m_searchString.Length > 0)
-			// {
-			// 	UpdateSearchResults();
-			// }
 			Repaint();
 		}
 
@@ -460,24 +398,14 @@ namespace CustomInputManagerEditor.IO
 				ControlScheme scheme = m_inputManager.ControlSchemes[m_selection.ControlScheme];
 
 				DeleteSchemeAction(scheme, m_selection.Action);
-				// scheme.DeleteAction(m_selection.Action);
+				
 			}
 			else if(m_selection.IsControlSchemeSelected)
 			{
-				// ControlScheme scheme = m_inputManager.ControlSchemes[m_selection.ControlScheme];
-				// for (int i = 0; i < InputManager.maxPlayers; i++) {
-				// 	if(m_inputManager.GetPlayerDefault(i) == scheme.Name)
-				// 		m_inputManager.SetPlayerDefault(i, null);
-				// }
-					
 				m_inputManager.ControlSchemes.RemoveAt(m_selection.ControlScheme);
 			}
 
 			m_selection.Reset();
-			// if(m_searchString.Length > 0)
-			// {
-			// 	UpdateSearchResults();
-			// }
 			Repaint();
 		}
 
@@ -485,16 +413,7 @@ namespace CustomInputManagerEditor.IO
 		{
 			m_inputManager.ControlSchemes.Clear();
 
-			// for (int i = 0; i < InputManager.maxPlayers; i++) {
-
-			// 	m_inputManager.SetPlayerDefault(i, string.Empty);
-			// }
-
 			m_selection.Reset();
-			// if(m_searchString.Length > 0)
-			// {
-			// 	UpdateSearchResults();
-			// }
 			Repaint();
 		}
 
@@ -534,7 +453,7 @@ namespace CustomInputManagerEditor.IO
 			InputAction action = scheme.Actions[m_selection.Action];
 
 			CopyInputAction(action, m_copySource);
-			// action.Copy(m_copySource);
+			
 		}
 
 		private void ReorderControlScheme(MoveDirection dir)
@@ -601,25 +520,7 @@ namespace CustomInputManagerEditor.IO
 			}
 		}
 
-		// private void UpdateSearchResults()
-		// {
-		// 	m_searchResults.Clear();
-
-		// 	if(!string.IsNullOrEmpty(m_searchString))
-		// 	{
-		// 		for(int i = 0; i < m_inputManager.ControlSchemes.Count; i++)
-		// 		{
-		// 			IEnumerable<int> axes = from a in m_inputManager.ControlSchemes[i].Actions
-		// 									where (a.Name.IndexOf(m_searchString, System.StringComparison.InvariantCultureIgnoreCase) >= 0)
-		// 									select m_inputManager.ControlSchemes[i].Actions.IndexOf(a);
-
-		// 			if(axes.Count() > 0)
-		// 			{
-		// 				m_searchResults.Add(new SearchResult(i, axes));
-		// 			}
-		// 		}
-		// 	}
-		// }
+		
 		#endregion
 
 		#region [OnGUI]
@@ -647,14 +548,7 @@ namespace CustomInputManagerEditor.IO
 			UpdateHierarchyPanelWidth();
 
 
-			// if(m_searchString.Length > 0)
-			// {
-			// 	DrawSearchResults();
-			// }
-			// else
-			// {
-				DrawHierarchyPanel();
-			// }
+			DrawHierarchyPanel();
 
 
 			DrawMainToolbar();
@@ -694,21 +588,13 @@ namespace CustomInputManagerEditor.IO
 			Rect editMenuRect = new Rect(fileMenuRect.xMax, 0.0f, MENU_WIDTH, screenRect.height);
 			Rect paddingLabelRect = new Rect(editMenuRect.xMax, 0.0f, screenRect.width - MENU_WIDTH * 2, screenRect.height);
 			Rect searchFieldRect = new Rect(screenRect.width - (MENU_WIDTH * 1.5f + 5.0f), 2.0f, MENU_WIDTH * 1.5f, screenRect.height - 2.0f);
-			// int lastSearchStringLength = m_searchString.Length;
-
+			
 			GUI.BeginGroup(screenRect);
 			DrawFileMenu(fileMenuRect);
 			DrawEditMenu(editMenuRect);
 			EditorGUI.LabelField(paddingLabelRect, "", EditorStyles.toolbarButton);
 			
-			// m_searchString = m_searchField.OnToolbarGUI(searchFieldRect, m_searchString);
-
 			GUI.EndGroup();
-
-			// if(lastSearchStringLength != m_searchString.Length)
-			// {
-			// 	UpdateSearchResults();
-			// }
 		}
 
 		private void DrawFileMenu(Rect screenRect)
@@ -769,38 +655,6 @@ namespace CustomInputManagerEditor.IO
 				break;
 			}
 		}
-
-		// private void DrawSearchResults()
-		// {
-		// 	Rect screenRect = new Rect(0.0f, TOOLBAR_HEIGHT - 5.0f, m_hierarchyPanelWidth, position.height - TOOLBAR_HEIGHT + 10.0f);
-		// 	Rect scrollView = new Rect(screenRect.x, screenRect.y + 5.0f, screenRect.width, position.height - screenRect.y);
-		// 	Rect viewRect = new Rect(0.0f, 0.0f, scrollView.width, CalculateSearchResultViewRectHeight());
-		// 	float itemPosY = 0.0f;
-
-		// 	GUI.Box(screenRect, "");
-		// 	m_hierarchyScrollPos = GUI.BeginScrollView(scrollView, m_hierarchyScrollPos, viewRect);
-		// 	for(int i = 0; i < m_searchResults.Count; i++)
-		// 	{
-		// 		Rect csRect = new Rect(1.0f, itemPosY, viewRect.width - 2.0f, HIERARCHY_ITEM_HEIGHT);
-		// 		int csIndex = m_searchResults[i].ControlScheme;
-
-		// 		DrawHierarchyControlSchemeItem(csRect, csIndex);
-		// 		itemPosY += HIERARCHY_ITEM_HEIGHT;
-
-		// 		if(m_inputManager.ControlSchemes[csIndex].IsExpanded)
-		// 		{
-		// 			for(int j = 0; j < m_searchResults[i].Actions.Count; j++)
-		// 			{
-		// 				Rect iaRect = new Rect(1.0f, itemPosY, viewRect.width - 2.0f, HIERARCHY_ITEM_HEIGHT);
-		// 				int iaIndex = m_searchResults[i].Actions[j];
-
-		// 				DrawHierarchyInputActionItem(iaRect, csIndex, iaIndex);
-		// 				itemPosY += HIERARCHY_ITEM_HEIGHT;
-		// 			}
-		// 		}
-		// 	}
-		// 	GUI.EndScrollView();
-		// }
 
 		private void DrawHierarchyPanel()
 		{
@@ -967,16 +821,12 @@ namespace CustomInputManagerEditor.IO
 
 			m_mainPanelScrollPos = GUI.BeginScrollView(position, m_mainPanelScrollPos, viewRect);
 			Rect nameRect = new Rect(0.0f, ValuePP(ref itemPosY, INPUT_FIELD_HEIGHT + FIELD_SPACING), contentWidth, INPUT_FIELD_HEIGHT);
-			// Rect rebindRect = new Rect(0.0f, ValuePP(ref itemPosY, INPUT_FIELD_HEIGHT + FIELD_SPACING), contentWidth, INPUT_FIELD_HEIGHT);
 			Rect displayNameRect = new Rect(0.0f, ValuePP(ref itemPosY, INPUT_FIELD_HEIGHT + FIELD_SPACING), contentWidth, INPUT_FIELD_HEIGHT);
 
 			string name = EditorGUI.TextField(nameRect, "Name", action.Name);
 			if(name != action.Name) action.Name = name;		//	This prevents the warning at runtime
 
-			// action.rebindable = EditorGUI.Toggle(rebindRect, "Rebindable", action.rebindable);
-			// if (action.rebindable) {
-				action.displayName = EditorGUI.TextField(displayNameRect, "Display Name", action.displayName);
-			// }
+			action.displayName = EditorGUI.TextField(displayNameRect, "Display Name", action.displayName);
 
 
 			
@@ -992,7 +842,6 @@ namespace CustomInputManagerEditor.IO
 					var res = DrawInputBindingFields(bindingRect, "Binding " + (i + 1).ToString("D2"), action, i);
 					if(res == CollectionAction.Add)
 					{
-						// action.InsertNewBinding(i + 1);
 						InsertNewBinding(action, i+1);
 						collectionChanged = true;
 					}
@@ -1006,21 +855,18 @@ namespace CustomInputManagerEditor.IO
 							action.bindings.RemoveAt(index);
 						 }
 
-						// action.DeleteBinding(i--);
-
+						
 						collectionChanged = true;
 					}
 					else if(res == CollectionAction.MoveUp)
 					{
 						SwapBindings(action, i, i-1);
-						// action.SwapBindings(i, i - 1);
 						collectionChanged = true;
 					}
 					else if(res == CollectionAction.MoveDown)
 					{
 						
 						SwapBindings(action, i, i+1);
-						// action.SwapBindings(i, i + 1);
 						collectionChanged = true;
 					}
 				}
@@ -1122,7 +968,6 @@ namespace CustomInputManagerEditor.IO
 				binding.Type == InputType.GamepadAnalogButton ||
 				binding.Type == InputType.MouseAxis
 			) {
-			// if(binding.Type == InputType.DigitalAxis || binding.Type == InputType.MouseAxis || binding.Type == InputType.GamepadAxis) {
 				binding.Sensitivity = EditorGUILayout.FloatField(m_sensitivityInfo, binding.Sensitivity);
 			}
 
@@ -1130,13 +975,9 @@ namespace CustomInputManagerEditor.IO
 				binding.DeadZone = EditorGUILayout.FloatField(m_deadZoneInfo, binding.DeadZone);
 			}
 
-			// if(binding.Type == InputType.DigitalAxis) {
-				binding.SnapWhenReadAsAxis = EditorGUILayout.Toggle(m_snapInfo, binding.SnapWhenReadAsAxis);
-			// }
+			binding.SnapWhenReadAsAxis = EditorGUILayout.Toggle(m_snapInfo, binding.SnapWhenReadAsAxis);
 
-			// if(	binding.Type == InputType.DigitalAxis || binding.Type == InputType.MouseAxis || binding.Type == InputType.GamepadAxis) {
-				binding.InvertWhenReadAsAxis = EditorGUILayout.Toggle("Invert When Axis Query", binding.InvertWhenReadAsAxis);
-			// }
+			binding.InvertWhenReadAsAxis = EditorGUILayout.Toggle("Invert When Axis Query", binding.InvertWhenReadAsAxis);
 
 
 			if( binding.Type == InputType.DigitalAxis || binding.Type == InputType.GamepadAnalogButton || binding.Type == InputType.GamepadAxis || binding.Type == InputType.MouseAxis) {
@@ -1279,7 +1120,6 @@ namespace CustomInputManagerEditor.IO
 				InputLoaderXML inputLoader = new InputLoaderXML(file);
 				var saveData = inputLoader.Load();
 				if(saveData != null && saveData.Count > 0)
-				// if(saveData.ControlSchemes != null && saveData.ControlSchemes.Count > 0)
 				
 				{
 					foreach(var scheme in saveData)
@@ -1289,10 +1129,6 @@ namespace CustomInputManagerEditor.IO
 				}
 			}
 
-			// if(m_searchString.Length > 0)
-			// {
-			// 	UpdateSearchResults();
-			// }
 			Repaint();
 		}
 
@@ -1324,21 +1160,6 @@ namespace CustomInputManagerEditor.IO
 
 			return height;
 		}
-
-		// private float CalculateSearchResultViewRectHeight()
-		// {
-		// 	float height = 0.0f;
-		// 	foreach(var result in m_searchResults)
-		// 	{
-		// 		height += HIERARCHY_ITEM_HEIGHT;
-		// 		if(m_inputManager.ControlSchemes[result.ControlScheme].IsExpanded)
-		// 		{
-		// 			height += result.Actions.Count * HIERARCHY_ITEM_HEIGHT;
-		// 		}
-		// 	}
-
-		// 	return height;
-		// }
 
 		private float CalculateInputActionViewRectHeight(InputAction action)
 		{
@@ -1440,15 +1261,6 @@ namespace CustomInputManagerEditor.IO
 			}
 		}
 
-		// public static void OpenWindow(InputManager target)
-		// {
-		// 	if(!IsOpen)
-		// 	{
-		// 		var window = EditorWindow.GetWindow<InputEditor>("Input Editor");
-		// 		window.m_inputManager = target;
-		// 		window.minSize = new Vector2(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT);
-		// 	}
-		// }
 
 		public static void CloseWindow()
 		{

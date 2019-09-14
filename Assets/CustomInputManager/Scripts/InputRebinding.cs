@@ -1,58 +1,10 @@
 ﻿using System.Collections;
 using UnityEngine;
-using System.IO;
-
 
 namespace CustomInputManager {
     public static class InputRebinding
     {
-        // public static bool ResetSchemes( TextAsset defaultInputSchemesXML )
-		// {
-		// 	using(StringReader reader = new StringReader(defaultInputSchemesXML.text))
-		// 	{
-        //         InputManager.Load(new InputLoaderXML(reader));
-		// 	}
-		// 	return false;
-		// }
-
-
-        // public static bool ResetScheme( string m_controlSchemeName, int bindingIndex)
-		// {
-		// 	ControlScheme defControlScheme = null;
-		// 	using(StringReader reader = new StringReader(InputManager.m_instance.defaultInputsXML.text))
-		// 	{
-		// 		defControlScheme = new InputLoaderXML(reader).Load(m_controlSchemeName);
-		// 	}
-
-		// 	if(defControlScheme != null)
-		// 	{
-		// 		ControlScheme controlScheme = InputManager.GetControlScheme(m_controlSchemeName);
-		// 		if(defControlScheme.Actions.Count == controlScheme.Actions.Count)
-		// 		{
-		// 			for(int i = 0; i < defControlScheme.Actions.Count; i++)
-		// 			{
-		// 				controlScheme.Actions[i].GetBinding(bindingIndex).Copy(defControlScheme.Actions[i].GetBinding(bindingIndex));
-		// 			}
-
-		// 			InputManager.Reinitialize();
-
-        //             return true;
-		// 		}
-		// 		else
-		// 		{
-		// 			Debug.LogError("Current and default control scheme don't have the same number of actions");
-		// 		}
-		// 	}
-		// 	else
-		// 	{
-		// 		Debug.LogErrorFormat("Default input profile doesn't contain a control scheme named '{0}'", m_controlSchemeName);
-		// 	}
-
-        //     return false;
-		// }
-
-
-
+        
         public static void SaveRebinds () {
             InputManager.SaveCustomBindings();
         }

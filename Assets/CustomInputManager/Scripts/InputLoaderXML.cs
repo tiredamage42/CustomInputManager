@@ -67,7 +67,6 @@ namespace CustomInputManager
 
 
 		public List<ControlScheme> Load()
-		// public SaveData Load()
 		{
 			XmlDocument doc = CreateXmlDocument();
 			if(doc != null)
@@ -76,8 +75,7 @@ namespace CustomInputManager
 			}
 
 			Debug.LogError("couldnt load xml doc");
-
-			return null;// new SaveData();
+			return null;
 		}
 
 		public ControlScheme Load(string schemeName)
@@ -91,24 +89,16 @@ namespace CustomInputManager
 		}
 
 		#region [V2]
-		// private SaveData Load_V2(XmlDocument doc)
 		List<ControlScheme> Load_V2(XmlDocument doc)
 		{
-			// SaveData saveData = new SaveData();
 			List<ControlScheme> saveData = new List<ControlScheme>();
 
 			var root = doc.DocumentElement;
-
-			// for (int i = 0; i < InputManager.maxPlayers; i++) {
-			// 	saveData.playerSchemes[i] = ReadNode(SelectSingleNode(root, "PlayerScheme"+i));
-			// }
-				
+		
 			var schemeNodes = SelectNodes(root, "ControlScheme");
 			foreach(XmlNode node in schemeNodes)
 			{
-				// saveData.ControlSchemes.Add(ReadControlScheme_V2(node));
 				saveData.Add(ReadControlScheme_V2(node));
-
 			}
 
 			return saveData;
@@ -152,8 +142,7 @@ namespace CustomInputManager
 		{
 			string name = ReadAttribute(node, "name", "Unnamed Action");
 			string displayName = ReadAttribute(node, "displayName", name);
-			// bool rebindable =  ReadAsBool(node.FirstChild);
-
+			
 			InputAction action = scheme.CreateNewAction(name, displayName);//, rebindable);
 			var bindingNodes = SelectNodes(node, "Binding");
 			foreach(XmlNode child in bindingNodes)

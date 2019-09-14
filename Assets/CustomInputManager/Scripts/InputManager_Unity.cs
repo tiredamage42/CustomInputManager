@@ -57,9 +57,7 @@ namespace CustomInputManager
 		{
 			InputAction action = GetAction(playerID, key);
 			if(action != null) return action.GetAxis(playerID);
-
 			Debug.LogError(string.Format("An axis key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
-			
 			// Debug.LogError(string.Format("An axis named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
 			return 0.0f;
 		}
@@ -68,9 +66,7 @@ namespace CustomInputManager
 		{
 			InputAction action = GetAction(playerID, key);
 			if(action != null) return action.GetAxisRaw(playerID);
-
 			Debug.LogError(string.Format("An axis key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
-			
 			// Debug.LogError(string.Format("An axis named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
 			return 0.0f;
 		}
@@ -79,9 +75,7 @@ namespace CustomInputManager
 		{
 			InputAction action = GetAction(playerID, key);
 			if(action != null) return action.GetButton(playerID);
-
 			Debug.LogError(string.Format("An button key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
-			
 			// Debug.LogError(string.Format("An button named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
 			return false;
 		}
@@ -90,9 +84,7 @@ namespace CustomInputManager
 		{
 			InputAction action = GetAction(playerID, key);
 			if(action != null) return action.GetButtonDown(playerID);
-			
 			Debug.LogError(string.Format("An button key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
-			
 			// Debug.LogError(string.Format("An button named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
 			return false;
 		}
@@ -101,9 +93,7 @@ namespace CustomInputManager
 		{
 			InputAction action = GetAction(playerID, key);
 			if(action != null) return action.GetButtonUp(playerID);
-			
 			Debug.LogError(string.Format("An button key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
-			
 			// Debug.LogError(string.Format("An button named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
 			return false;
 		}
