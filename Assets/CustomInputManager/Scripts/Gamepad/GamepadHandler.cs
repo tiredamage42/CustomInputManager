@@ -64,12 +64,16 @@ namespace CustomInputManager
         {
             public Vector2 axes;
             public ButtonState Up, Down, Left, Right;
-            public static DPadState Empty => new DPadState() {
-                Up = ButtonState.Released,
-                Down = ButtonState.Released,
-                Right = ButtonState.Released,
-                Left = ButtonState.Released
-            };
+            public static DPadState Empty { 
+                get { 
+                    return new DPadState() {
+                        Up = ButtonState.Released,
+                        Down = ButtonState.Released,
+                        Right = ButtonState.Released,
+                        Left = ButtonState.Released
+                    }; 
+                }
+            }
 
             public void UpdateButtonStates (bool upPressed, bool downPressed, bool leftPressed, bool rightPressed) {
                 Up = GetNewDPadButtonState(upPressed, Up);
