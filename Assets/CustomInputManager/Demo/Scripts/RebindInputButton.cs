@@ -89,7 +89,7 @@ namespace CustomInputManager.Examples
 		}
 
 		void OnClick (InputBinding inputBinding, UIButton button, bool changePositive) {
-			if (InputRebinding.OnStartRebind(inputBinding, changePositive, OnStopScan)) {
+			if (CustomInput.ScanInputForControlRebind(inputBinding, changePositive, OnStopScan)) {
 				// override ui input
 				UIUtils.OverrideUIInputControl();
 				// update button visual
@@ -108,11 +108,11 @@ namespace CustomInputManager.Examples
 
 		void OnSensitivityChange (float value) {
 			inputBinding.Sensitivity = value;
-			InputRebinding.SaveRebinds();
+			CustomInput.SaveCustomControls();
 		}
 		void OnInvertChanged(bool value) {
 			inputBinding.InvertWhenReadAsAxis = value;
-			InputRebinding.SaveRebinds();
+			CustomInput.SaveCustomControls();
 		}
 
 		public void RefreshText () {
@@ -123,7 +123,7 @@ namespace CustomInputManager.Examples
 		}
 
 		void OnStopScan() {
-			InputRebinding.SaveRebinds();
+			CustomInput.SaveCustomControls();
 			RefreshText();
 			UIUtils.RestoreUIInputControl();
 		}	

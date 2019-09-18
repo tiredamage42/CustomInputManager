@@ -15,7 +15,7 @@ namespace CustomInputManager.Examples
 		List<RebindInputButton> rebinders = new List<RebindInputButton>();
 
 		void BuildRebindElements () {
-			ControlScheme controlScheme = InputManager.GetControlScheme(m_controlSchemeName);
+			ControlScheme controlScheme = CustomInput.GetControlScheme(m_controlSchemeName);
 			
 			for (int i = 0; i < controlScheme.Actions.Count; i++) {
 
@@ -39,7 +39,7 @@ namespace CustomInputManager.Examples
 		
 		public void ResetScheme()
 		{
-			if (InputManager.ResetScheme(m_controlSchemeName, bindingIndex)) {
+			if (CustomInput.RevertSchemeToDefaults(m_controlSchemeName, bindingIndex)) {
 				foreach (var t in rebinders) t.RefreshText();
 			}
 		}

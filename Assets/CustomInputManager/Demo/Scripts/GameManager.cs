@@ -44,7 +44,7 @@ public class GameManager : MonoBehaviour
 
 		int _PauseKey;
 		void InitializeInputNameKeys () {
-			_PauseKey = InputManager.Name2Key("Pause");
+			_PauseKey = CustomInput.Name2Key("Pause");
 		}
 
 		void OnEnable () {
@@ -68,7 +68,7 @@ public class GameManager : MonoBehaviour
 
 		void Update () {
 			if (!isPaused) {
-				if(InputManager.GetButtonDown(_PauseKey))
+				if(CustomInput.GetButtonDown(_PauseKey))
 				{
 					Pause();
 					pauseMenu.Open();

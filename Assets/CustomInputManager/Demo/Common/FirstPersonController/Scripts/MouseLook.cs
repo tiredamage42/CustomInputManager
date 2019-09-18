@@ -35,8 +35,8 @@ namespace CustomInputManager.Examples
 
 		int _MouseX, _MouseY;
         void InitializeInputNameKeys () {
-            _MouseX = InputManager.Name2Key("MouseX");
-            _MouseY = InputManager.Name2Key("MouseY");
+            _MouseX = CustomInput.Name2Key("MouseX");
+            _MouseY = CustomInput.Name2Key("MouseY");
             
         }
 
@@ -52,20 +52,20 @@ namespace CustomInputManager.Examples
 
 			if (axes == RotationAxes.MouseXAndY)
 			{
-				float rotationX = transform.localEulerAngles.y + InputManager.GetAxis(_MouseX) * sensitivityX;
+				float rotationX = transform.localEulerAngles.y + CustomInput.GetAxis(_MouseX) * sensitivityX;
 				
-				rotationY += InputManager.GetAxis(_MouseY) * sensitivityY;
+				rotationY += CustomInput.GetAxis(_MouseY) * sensitivityY;
 				rotationY = Mathf.Clamp (rotationY, minimumY, maximumY);
 				
 				transform.localEulerAngles = new Vector3(-rotationY, rotationX, 0);
 			}
 			else if (axes == RotationAxes.MouseX)
 			{
-				transform.Rotate(0, InputManager.GetAxis(_MouseX) * sensitivityX, 0);
+				transform.Rotate(0, CustomInput.GetAxis(_MouseX) * sensitivityX, 0);
 			}
 			else
 			{
-				rotationY += InputManager.GetAxis(_MouseY) * sensitivityY;
+				rotationY += CustomInput.GetAxis(_MouseY) * sensitivityY;
 				rotationY = Mathf.Clamp (rotationY, minimumY, maximumY);
 				
 				transform.localEulerAngles = new Vector3(-rotationY, transform.localEulerAngles.y, 0);

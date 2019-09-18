@@ -70,13 +70,13 @@ namespace Syd.UI
     public class StandaloneInputModule : PointerInputModule
     {
         float GetAxisRaw (int axis) {
-            return InputManager.GetAxisRaw(axis);
+            return CustomInput.GetAxisRaw(axis);
         }
         bool GetButtonDown (int button) {
-            return InputManager.GetButtonDown(button);
+            return CustomInput.GetButtonDown(button);
         }
         bool GetMouseButtonDown (int button) {
-            return InputManager.GetMouseButtonDown(button);
+            return CustomInput.GetMouseButtonDown(button);
         }
 
         bool overrideInput;
@@ -87,10 +87,10 @@ namespace Syd.UI
 
         int _HorizontalAxis, _VerticalAxis, _SubmitButton, _CancelButton;
         void InitializeInputNameKeys () {
-            _HorizontalAxis = InputManager.Name2Key(m_HorizontalAxis);
-            _VerticalAxis = InputManager.Name2Key(m_VerticalAxis);
-            _SubmitButton = InputManager.Name2Key(m_SubmitButton);
-            _CancelButton = InputManager.Name2Key(m_CancelButton);
+            _HorizontalAxis = CustomInput.Name2Key(m_HorizontalAxis);
+            _VerticalAxis = CustomInput.Name2Key(m_VerticalAxis);
+            _SubmitButton = CustomInput.Name2Key(m_SubmitButton);
+            _CancelButton = CustomInput.Name2Key(m_CancelButton);
         }
 
         protected override void OnEnable() {
@@ -128,7 +128,7 @@ namespace Syd.UI
         public override void UpdateModule()
         {
             m_LastMousePosition = m_MousePosition;
-            m_MousePosition = InputManager.mousePosition;
+            m_MousePosition = CustomInput.mousePosition;
         }
 
         public override bool IsModuleSupported()
@@ -165,8 +165,8 @@ namespace Syd.UI
         public override void ActivateModule()
         {
             base.ActivateModule();
-            m_MousePosition = InputManager.mousePosition;
-            m_LastMousePosition = InputManager.mousePosition;
+            m_MousePosition = CustomInput.mousePosition;
+            m_LastMousePosition = CustomInput.mousePosition;
 
             var toSelect = eventSystem.currentSelectedGameObject;
             
