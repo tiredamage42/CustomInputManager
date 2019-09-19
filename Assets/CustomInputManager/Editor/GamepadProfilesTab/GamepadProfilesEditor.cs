@@ -1,9 +1,19 @@
 ﻿using UnityEngine;
 using UnityEditor;
+
+using CustomEditorTools;
 using CustomInputManager.Internal;
 namespace CustomInputManager.Editor {
     public class GamepadProfilesEditor 
     {
+
+        void NewProfile (GenericGamepadProfile profile) {
+            if (!InputManager.instance._gamepads.Contains(profile)) {
+                InputManager.instance._gamepads.Add(profile);
+                EditorUtility.SetDirty(InputManager.instance);
+                ProjectTools.RefreshAndSave();
+            }
+        }
 
         public GenericGamepadProfile CreateNewGamepadProfile (string name) {
             string dir = InputManager.fullResourcesDirectory + GamepadHandler.gamepadProfilesResourcesDirectory;
@@ -16,18 +26,18 @@ namespace CustomInputManager.Editor {
             }
             GenericGamepadProfile profile = ScriptableObject.CreateInstance<GenericGamepadProfile>();
             AssetDatabase.CreateAsset(profile, path);
-			RefreshAndSaveAssets();
+
+            NewProfile(profile);
+        
             return profile;
         }
 	
         public void DuplicateProfile (GenericGamepadProfile source) {
-            // GenericGamepadProfile source = gamepadProfiles[selectedProfileIndex];
             string sourcePath = AssetDatabase.GetAssetPath(source);
             if (sourcePath.EndsWith(".asset")) sourcePath = sourcePath.Substring(0, sourcePath.Length - 6);
-            
             GenericGamepadProfile newProfile = CreateNewGamepadProfile(System.IO.Path.GetFileName(sourcePath) + "_Duplicate");
             DuplicateGamepadProfile(source, newProfile);
-			RefreshAndSaveAssets();
+            NewProfile(newProfile);
         }
 
 		void DuplicateGamepadProfile (GenericGamepadProfile source, GenericGamepadProfile target) {
@@ -73,18 +83,20 @@ namespace CustomInputManager.Editor {
 
 		public void DeleteProfile(GenericGamepadProfile toDelete) {
             if (EditorUtility.DisplayDialog("Delete Gamepad Profile", "Are you sure you want to delete profile: " + toDelete.name + "?", "Yes", "No")) {
+                
+                InputManager.instance._gamepads.Remove(toDelete);
+                EditorUtility.SetDirty(InputManager.instance);
+
                 AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(toDelete));
-				RefreshAndSaveAssets();
+
+
+				ProjectTools.RefreshAndSave();
 			}
         }
         public void RenameProfile(GenericGamepadProfile profile, string newName) {
 			AssetDatabase.RenameAsset(AssetDatabase.GetAssetPath(profile), newName);
-			RefreshAndSaveAssets();
+			ProjectTools.RefreshAndSave();
         }
-		static void RefreshAndSaveAssets () {
-			AssetDatabase.Refresh();
-			AssetDatabase.SaveAssets();
-		}
 
         string[] buttonDisplayNames {
             get {

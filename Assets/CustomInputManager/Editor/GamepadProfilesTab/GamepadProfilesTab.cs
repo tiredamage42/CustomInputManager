@@ -9,13 +9,11 @@ namespace CustomInputManager.Editor {
 
     [System.Serializable] public class GamepadProfilesTab
     {
-		
-		
 		GamepadProfilesEditor profilesEditor = new GamepadProfilesEditor();
 		[SerializeField] GamepadTestSceneEditor testSceneEditor = new GamepadTestSceneEditor();
+		List<GenericGamepadProfile> gamepadProfiles { get { return InputManager.instance._gamepads; } }
         
-		GenericGamepadProfile[] gamepadProfiles;
-        SerializedObject profileSO;
+		SerializedObject profileSO;
 		
 		bool hasSelection { get { return selectedProfileIndex >= 0; } }
 		int selectedProfileIndex { 
@@ -27,7 +25,6 @@ namespace CustomInputManager.Editor {
 
 
         void ReloadProfilesAndRepaint () {
-			gamepadProfiles = GamepadHandler.LoadAllGamepadProfiles();
 			InputManagerWindow.ResetSelections();
 			InputManagerWindow.instance.Repaint();
 		}
@@ -74,7 +71,7 @@ namespace CustomInputManager.Editor {
 
 		List<HieararchyGUIElement> BuildHierarchyElementsList () {
 			List<HieararchyGUIElement> r = new List<HieararchyGUIElement>();
-			for (int i = 0; i < gamepadProfiles.Length; i++) {
+			for (int i = 0; i < gamepadProfiles.Count; i++) {
 				r.Add(new HieararchyGUIElement(gamepadProfiles[i].name, null, CreateControlSchemeContextMenu));
 			}
 			return r;
@@ -83,9 +80,9 @@ namespace CustomInputManager.Editor {
 		
 		public void OnGUI()
 		{
-			if (gamepadProfiles == null) gamepadProfiles = GamepadHandler.LoadAllGamepadProfiles();
+			// if (gamepadProfiles == null) gamepadProfiles = GamepadHandler.LoadAllGamepadProfiles();
 	
-			if (gamepadProfiles.Length <= 0 || (hasSelection && selectedProfileIndex >= gamepadProfiles.Length)) InputManagerWindow.ResetSelections();
+			if (gamepadProfiles.Count <= 0 || (hasSelection && selectedProfileIndex >= gamepadProfiles.Count)) InputManagerWindow.ResetSelections();
 
 			float testButtonHeight = 30; 
 			if (Application.isPlaying) {

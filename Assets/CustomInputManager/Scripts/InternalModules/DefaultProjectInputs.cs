@@ -14,7 +14,14 @@ namespace CustomInputManager.Internal {
     public static class DefaultProjectInputs
     {
         const string XMLName = "DefaultProjectInputsXML";
-        static TextAsset _xmlAsset;
+        static TextAsset _xmlAsset {
+            get {
+                return InputManager.instance.defaultProjectInputs;
+            }
+            set {
+                InputManager.instance.defaultProjectInputs = value;
+            }
+        }
         static TextAsset xmlAsset {
             get {
                 if (_xmlAsset == null) {
@@ -23,7 +30,23 @@ namespace CustomInputManager.Internal {
                 return _xmlAsset;
             }
         }
+        static void InitializeXMLAsset () {
+            if (_xmlAsset != null)
+                return;
+            
+            // _xmlAsset = LoadXMLAsset();
 
+            #if UNITY_EDITOR
+            // if (_xmlAsset == null) {
+                if (Application.isPlaying) {
+                    Debug.LogError("Default Project Inputs XML not found! Open up the Custom Input Manager Window in Editor Mode to initialize it.");
+                }
+                else {
+                    _xmlAsset = CreateNewXML ();
+                }
+            // }
+            #endif   
+        }
    
         public static ControlScheme LoadDefaultScheme (string controlSchemeName) {
             ControlScheme r = null;
@@ -43,35 +66,17 @@ namespace CustomInputManager.Internal {
             }
             return r;
         }
-
-        
-        static void InitializeXMLAsset () {
-            if (_xmlAsset != null)
-                return;
-            
-            _xmlAsset = LoadXMLAsset();
-
-            #if UNITY_EDITOR
-            if (_xmlAsset == null) {
-                if (Application.isPlaying) {
-                    Debug.LogError("Default Project Inputs XML not found! Open up the Custom Input Manager Window in Editor Mode to initialize it.");
-                }
-                else {
-                    _xmlAsset = CreateNewXML ();
-                }
-            }
-            #endif   
-        }
-                    
-        static TextAsset LoadXMLAsset () {
-            return Resources.Load<TextAsset>(InputManager.resourcesFolder + XMLName);
-        }
-
+           
+        // static TextAsset LoadXMLAsset () {
+        //     return Resources.Load<TextAsset>(InputManager.resourcesFolder + XMLName);
+        // }
 
 #if UNITY_EDITOR
         static TextAsset CreateNewXML () {
             SaveSchemesAsDefault("Creating", new List<ControlScheme>());
-            return LoadXMLAsset();   
+            // return LoadXMLAsset();   
+
+            return AssetDatabase.LoadAssetAtPath<TextAsset>(InputManager.fullResourcesDirectory + XMLName + ".xml");
         }
         public static void SaveSchemesAsDefault (string msg, List<ControlScheme> controlSchemes) {
             if (InputManager.instance == null)
@@ -86,6 +91,9 @@ namespace CustomInputManager.Internal {
             new InputSaverXML(path).Save(controlSchemes);
             AssetDatabase.Refresh();
             AssetDatabase.SaveAssets();
+
+
+
         }
 #endif
 

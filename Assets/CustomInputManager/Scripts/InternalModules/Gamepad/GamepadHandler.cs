@@ -58,8 +58,8 @@ namespace CustomInputManager
             return r;
         }
 
-        static GenericGamepadProfile GetProfileForJoystickName(string joystickName, GenericGamepadProfile[] allProfiles) {
-            for (int i = 0; i < allProfiles.Length; i++) {
+        static GenericGamepadProfile GetProfileForJoystickName(string joystickName, List<GenericGamepadProfile> allProfiles) {// GenericGamepadProfile[] allProfiles) {
+            for (int i = 0; i < allProfiles.Count; i++) {
                 GenericGamepadProfile p = allProfiles[i];
                 if (CurrentPlatformInGamepadPlatforms(ToList(p.platforms))) {
                     for (int n = 0; n < p.unityJoystickNames.Length; n++) {
@@ -101,13 +101,20 @@ namespace CustomInputManager
             }
         }
 
-        static GenericGamepadProfile[] gamepadProfilesPerGamepad, allGamepadProfiles;
-        public const string gamepadProfilesResourcesDirectory = "GamepadProfiles";
-        const string gamepadProfilesResourcesPath = InputManager.resourcesFolder + gamepadProfilesResourcesDirectory;
-
-        public static GenericGamepadProfile[] LoadAllGamepadProfiles () {
-            return Resources.LoadAll(gamepadProfilesResourcesPath, typeof(GenericGamepadProfile)).Cast<GenericGamepadProfile>().ToArray();
+        // static GenericGamepadProfile[] gamepadProfilesPerGamepad, allGamepadProfiles;
+        static GenericGamepadProfile[] gamepadProfilesPerGamepad;
+        static List<GenericGamepadProfile> allGamepadProfiles {
+            get {
+                return InputManager.instance._gamepads;
+            }
         }
+
+        public const string gamepadProfilesResourcesDirectory = "GamepadProfiles";
+        // const string gamepadProfilesResourcesPath = InputManager.resourcesFolder + gamepadProfilesResourcesDirectory;
+
+        // public static GenericGamepadProfile[] LoadAllGamepadProfiles () {
+        //     return Resources.LoadAll(gamepadProfilesResourcesPath, typeof(GenericGamepadProfile)).Cast<GenericGamepadProfile>().ToArray();
+        // }
         
         static float dpadGravity { get { return InputManager.dpadGravity; } }
         static float dpadSensitivity { get { return InputManager.dpadSensitivity; } }
@@ -124,7 +131,7 @@ namespace CustomInputManager
             // this.dpadSensitivity = dpadSensitivity;
             // this.dpadSnap = dpadSnap;
 
-            allGamepadProfiles = LoadAllGamepadProfiles();
+            // allGamepadProfiles = LoadAllGamepadProfiles();
 
             gamepadProfilesPerGamepad = new GenericGamepadProfile[maxJoysticks];
             gamepadNames = new string[maxJoysticks];

@@ -1,9 +1,13 @@
 ﻿using UnityEngine;
-
+using System.Collections.Generic;
+using GameSettingsSystem;
 namespace CustomInputManager.Internal {
 
     [CreateAssetMenu(menuName="Custom Input Manager/Replacement Input Manager", fileName="InputManager")]
-    public class InputManager : ScriptableObject
+    public class InputManager : GameSettingsObject
+    // public class InputManager : ScriptableObject
+    
+    
     {
         public int _maxPlayers = 2;
         
@@ -13,6 +17,10 @@ namespace CustomInputManager.Internal {
         public bool _dpadSnap = true;
         [Header("Interval (in seconds) to check for joystick connections")]
         [Range(.01f, 5.0f)] public float _joystickCheckFrequency = 1.0f;
+
+        public List<GenericGamepadProfile> _gamepads = new List<GenericGamepadProfile>();
+        public TextAsset defaultProjectInputs;
+
 
         public static int maxPlayers {
             get {
@@ -45,17 +53,22 @@ namespace CustomInputManager.Internal {
             }
         }
         
+
+        // just for editor
         public const string resourcesFolder = "CustomInputManager/";
-        const string resourcesPath = resourcesFolder + "InputManager";
+        // const string resourcesPath = resourcesFolder + "InputManager";
         
         static InputManager _instance;
         public static InputManager instance {
             get {
                 if (_instance == null) {
-                    _instance = Resources.Load<InputManager>(resourcesPath);
+                    _instance = GameSettings.GetSettings<InputManager>();
+                    // _instance = Resources.Load<InputManager>(resourcesPath);
                 }
+                
                 if (_instance == null) {
-                    Debug.LogError("Input Manager object not found! Create a new one at path: 'Resources/" + resourcesPath + ".asset.\nProject View -> Right Click -> Custom Input Manager -> Replacement Input Manager");
+                    // Debug.LogError("Input Manager object not found! Create a new one at path: 'Resources/" + resourcesPath + ".asset.\nProject View -> Right Click -> Custom Input Manager -> Replacement Input Manager");
+                    Debug.LogError("Input Manager object not found! Create a new one.\nProject View -> Right Click -> Custom Input Manager -> Replacement Input Manager");
                 }
                 return _instance;       
             }

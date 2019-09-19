@@ -1,15 +1,14 @@
 ﻿using System;
 using UnityEngine;
 using UnityEditor;
-
+using CustomEditorTools;
 namespace CustomInputManager.Editor {
     
     public class InputManagerWindow : EditorWindow {
 
-        [MenuItem("GameObject/Input Manager", false, 300)]
+        [MenuItem(ProjectTools.defaultMenuItemSection + "Input Manager", false, ProjectTools.defaultMenuItemPriority)]
 		static void OpenWindow () {
-			EditorWindow settingsWindow = EditorWindow.GetWindow<InputManagerWindow>("Input Manager", true, Type.GetType("UnityEditor.InspectorWindow,UnityEditor.dll"));
-			settingsWindow.Focus();
+            EditorWindowTools.OpenWindowNextToInspector<InputManagerWindow>("Input Manager");
 		}
 
         public InputSettingsTab inputSettings = new InputSettingsTab();

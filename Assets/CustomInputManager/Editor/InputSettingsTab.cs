@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using CustomInputManager.Internal;
+using CustomEditorTools;
 namespace CustomInputManager.Editor {
 	public class InputSettingsTab
 	{
@@ -15,8 +16,8 @@ namespace CustomInputManager.Editor {
                 EditorGUILayout.Space();
                 EditorGUILayout.HelpBox("Scene already initialized... any changes will take place the next time you enter play mode.", MessageType.Info);
             }
-            EditorGUILayout.Space();
-            EditorGUILayout.Space();
+
+            GUITools.Space(2);
             for (int i = 0; i < props.Length; i++) {
                 GUI.enabled = i > 0 || !Application.isPlaying;
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(props[i]), true);
