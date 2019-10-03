@@ -137,10 +137,11 @@ namespace CustomInputManager
 			return null;
 		}
 
-		static InputAction GetAction(int playerID, int actionKey)
+		static InputAction GetAction(int playerID, int actionKey, out ControlScheme playerUsesScheme)
 		{
-			if(playerSchemes[playerID] == null) return null;
-			return playerSchemes[playerID].GetAction(actionKey);
+			playerUsesScheme = playerSchemes[playerID];
+			if(playerUsesScheme == null) return null;
+			return playerUsesScheme.GetAction(actionKey);
 		}
 
 		public static int Name2Key (string name) {
@@ -252,18 +253,20 @@ namespace CustomInputManager
 
 
 
-		static bool ButtonQuery (int key, int playerID, System.Func<InputAction, int, bool> buttonQuery) {
-			InputAction action = GetAction(playerID, key);
+		static bool ButtonQuery (int key, int playerID, Func<InputAction, int, bool> buttonQuery) {
+			ControlScheme playerUsesScheme;
+			InputAction action = GetAction(playerID, key, out playerUsesScheme);
 			if(action != null) return buttonQuery(action, playerID);
-			Debug.LogError(string.Format("An button key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
+			Debug.LogError(string.Format("An button key \'{0}\' does not exist in the active input configuration for player {1} usign scheme: {2}", key, playerID, playerUsesScheme.Name));
 			// Debug.LogError(string.Format("An button named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
 			return false;
 		}
 
-		static float AxisQuery (int key, int playerID, System.Func<InputAction, int, float> axisQuery) {
-			InputAction action = GetAction(playerID, key);
+		static float AxisQuery (int key, int playerID, Func<InputAction, int, float> axisQuery) {
+			ControlScheme playerUsesScheme;
+			InputAction action = GetAction(playerID, key, out playerUsesScheme);
 			if(action != null) return axisQuery(action, playerID);
-			Debug.LogError(string.Format("An axis key \'{0}\' does not exist in the active input configuration for player {1}", key, playerID));
+			Debug.LogError(string.Format("An axis key \'{0}\' does not exist in the active input configuration for player {1} usign scheme: {2}", key, playerID, playerUsesScheme.Name));
 			// Debug.LogError(string.Format("An axis named \'{0}\' does not exist in the active input configuration for player {1}", name, playerID));
 			return 0.0f;
 		}
