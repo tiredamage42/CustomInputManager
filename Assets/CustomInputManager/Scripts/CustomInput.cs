@@ -44,20 +44,25 @@ namespace CustomInputManager
 		{
 			float unscaledDeltaTime = Time.unscaledDeltaTime;
 			GamepadHandler.OnUpdate(unscaledDeltaTime);
-			for (int i = 0; i < m_controlSchemes.Count; i++) {
-				m_controlSchemes[i].Update(unscaledDeltaTime);
+
+			HashSet<ControlScheme> updatedSchemes = new HashSet<ControlScheme>();
+
+			for (int i = 0; i < playerSchemes.Length; i++) {
+				if (playerSchemes[i] != null) {
+					if (!updatedSchemes.Contains(playerSchemes[i])) {
+						playerSchemes[i].Update(unscaledDeltaTime);
+						updatedSchemes.Add(playerSchemes[i]);
+					}
+				}
 			}
+			
 			ScanService.Update(Time.unscaledTime, KeyCode.Escape, 5.0f, numPlayers);
 		}
 
 		public static void RunCoroutine (IEnumerator coroutine) {
 			init(); inst.StartCoroutine(coroutine);
-		}
-		
+		}		
 		#endregion
-
-
-
 
 		static List<ControlScheme> m_controlSchemes = new List<ControlScheme>();
 		static ControlScheme[] playerSchemes;

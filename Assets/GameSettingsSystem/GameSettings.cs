@@ -3,6 +3,8 @@ using UnityEngine;
 using System;
 using System.Linq;
 
+
+using GameSettingsSystem.Internal;
 namespace GameSettingsSystem {
 
     /*
@@ -77,7 +79,7 @@ namespace GameSettingsSystem {
             if the name parameter is null, we jsut return the first of type(T)
             we find
         */
-        public static T GetSettings<T> (string name=null) where T : GameSettingsObject {
+        static T GetSettingsInternal<T> (string name, bool firstTry) where T : GameSettingsObject {
             if (settings == null)
                 return null;
 
@@ -92,6 +94,11 @@ namespace GameSettingsSystem {
                         }
                     }
                 }
+                if (firstTry) {
+                    // try and refresh teh settings list if we cant find it
+                    RefreshSettingsList.RefreshGameSettingsList();
+                    return GetSettingsInternal<T>(name, false);
+                }   
             }
             else {
                 Dictionary<string, GameSettingsObject> namesLookup;
@@ -113,6 +120,14 @@ namespace GameSettingsSystem {
 
             Debug.LogError("Couldnt find Settings Object of type " + typeof(T).FullName + " named '" + name + "'.");
             return null;
+        }
+
+        /*
+            if the name parameter is null, we jsut return the first of type(T)
+            we find
+        */
+        public static T GetSettings<T> (string name=null) where T : GameSettingsObject {
+            return GetSettingsInternal<T>(name, true);
         }
     }
 

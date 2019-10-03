@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using CustomEditorTools;
+
+using GameSettingsSystem.Internal;
 namespace GameSettingsSystem.Editor {
 
     /*
@@ -51,6 +53,10 @@ namespace GameSettingsSystem.Editor {
             EditorGUI.BeginChangeCheck();
 
             windowObject.Update();
+
+            if (GUILayout.Button("Refresh Settings List")) {
+                RefreshSettingsList.RefreshGameSettingsList();
+            }
             EditorGUILayout.LabelField("Choose Settings:", EditorStyles.boldLabel);
             AssetSelector.Draw(typeof(GameSettingsObject), selectedSettingsProp, GUIContent.none, OnAssetsLoaded);
             windowObject.ApplyModifiedProperties();

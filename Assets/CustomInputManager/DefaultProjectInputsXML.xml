@@ -323,5 +323,77 @@
         <GamepadAxis>LeftThumbstickX</GamepadAxis>
       </Binding>
     </Action>
+    <Action name="New Action" displayName="New Action Display Name">
+      <Binding>
+        <Positive>None</Positive>
+        <Negative>None</Negative>
+        <DeadZone>0.2</DeadZone>
+        <Gravity>1</Gravity>
+        <Sensitivity>1</Sensitivity>
+        <Snap>false</Snap>
+        <Invert>false</Invert>
+        <UseNeg>False</UseNeg>
+        <Rebindable>False</Rebindable>
+        <SensitivityEditable>False</SensitivityEditable>
+        <InvertEditable>False</InvertEditable>
+        <Type>KeyButton</Type>
+        <Axis>0</Axis>
+        <GamepadButton>LeftStick</GamepadButton>
+        <GamepadAxis>LeftThumbstickX</GamepadAxis>
+      </Binding>
+      <Binding>
+        <Positive>None</Positive>
+        <Negative>None</Negative>
+        <DeadZone>0.2</DeadZone>
+        <Gravity>1</Gravity>
+        <Sensitivity>1</Sensitivity>
+        <Snap>false</Snap>
+        <Invert>false</Invert>
+        <UseNeg>False</UseNeg>
+        <Rebindable>False</Rebindable>
+        <SensitivityEditable>False</SensitivityEditable>
+        <InvertEditable>False</InvertEditable>
+        <Type>DigitalAxis</Type>
+        <Axis>0</Axis>
+        <GamepadButton>LeftStick</GamepadButton>
+        <GamepadAxis>LeftThumbstickX</GamepadAxis>
+      </Binding>
+    </Action>
+    <Action name="New Action Copy" displayName="New Action Display Name">
+      <Binding>
+        <Positive>None</Positive>
+        <Negative>None</Negative>
+        <DeadZone>0.2</DeadZone>
+        <Gravity>1</Gravity>
+        <Sensitivity>1</Sensitivity>
+        <Snap>false</Snap>
+        <Invert>false</Invert>
+        <UseNeg>False</UseNeg>
+        <Rebindable>False</Rebindable>
+        <SensitivityEditable>False</SensitivityEditable>
+        <InvertEditable>False</InvertEditable>
+        <Type>DigitalAxis</Type>
+        <Axis>0</Axis>
+        <GamepadButton>LeftStick</GamepadButton>
+        <GamepadAxis>LeftThumbstickX</GamepadAxis>
+      </Binding>
+      <Binding>
+        <Positive>None</Positive>
+        <Negative>None</Negative>
+        <DeadZone>0.2</DeadZone>
+        <Gravity>1</Gravity>
+        <Sensitivity>1</Sensitivity>
+        <Snap>false</Snap>
+        <Invert>false</Invert>
+        <UseNeg>False</UseNeg>
+        <Rebindable>False</Rebindable>
+        <SensitivityEditable>False</SensitivityEditable>
+        <InvertEditable>False</InvertEditable>
+        <Type>DigitalAxis</Type>
+        <Axis>0</Axis>
+        <GamepadButton>LeftStick</GamepadButton>
+        <GamepadAxis>LeftThumbstickX</GamepadAxis>
+      </Binding>
+    </Action>
   </ControlScheme>
 </Input>

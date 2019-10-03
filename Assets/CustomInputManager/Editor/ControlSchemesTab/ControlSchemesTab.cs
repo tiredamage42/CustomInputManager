@@ -168,7 +168,8 @@ namespace CustomInputManager.Editor {
 				case 0: ConvertUnityInputManager.OverwriteProjectSettings(); break;
 				case 1: SaveDefaultProjectInputsXML(); break;
 				case 2: CreateNewControlScheme(); break;
-				case 3: CreateNewInputAction(); break; case 4: Duplicate(); break;
+				case 3: CreateNewInputAction(); break; 
+				case 4: Duplicate(); break;
 				case 5: Delete(); break;
 				case 6: CopyInputAction(); break;
 				case 7: PasteInputAction(); break;
@@ -421,7 +422,7 @@ namespace CustomInputManager.Editor {
 			{
 				InputBinding duplicate = new InputBinding();
 				duplicate.Copy(binding);
-				a.bindings.Add(binding);
+				a.bindings.Add(duplicate);
 			}
 		}
 
