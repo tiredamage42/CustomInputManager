@@ -635,6 +635,11 @@ namespace CustomInputManager.Editor {
 			GUILayout.BeginArea(layoutArea);
 			binding.Type = (InputType)EditorGUILayout.EnumPopup("Type", binding.Type);
 
+
+			if (binding.Type == InputType.MouseButton) {
+				binding.mouseButton = EditorGUILayout.Popup("Button", binding.mouseButton, InputBinding.mouseButtonNames);// m_axisOptions);
+			}
+
 			if(binding.Type == InputType.KeyButton || binding.Type == InputType.DigitalAxis) {
 				DrawKeyCodeField(action, bindingIndex, KeyType.Positive);
 			}
@@ -656,6 +661,7 @@ namespace CustomInputManager.Editor {
 			}
 
 			if (
+				binding.Type == InputType.MouseButton ||
 				binding.Type == InputType.DigitalAxis ||
 				binding.Type == InputType.KeyButton ||
 				binding.Type == InputType.GamepadButton ||
@@ -665,6 +671,7 @@ namespace CustomInputManager.Editor {
 			}
 
 			if (
+				binding.Type == InputType.MouseButton ||
 				binding.Type == InputType.DigitalAxis ||
 				binding.Type == InputType.KeyButton ||
 				binding.Type == InputType.GamepadButton ||
@@ -780,6 +787,7 @@ namespace CustomInputManager.Editor {
 			switch(binding.Type)
 			{
 			case InputType.KeyButton: numberOfFields = 5; break;
+			case InputType.MouseButton: numberOfFields = 5; break;
 			case InputType.MouseAxis: numberOfFields = 6; break;
 			case InputType.DigitalAxis: numberOfFields = 7; break;
 			case InputType.GamepadButton: numberOfFields = 5; break;
