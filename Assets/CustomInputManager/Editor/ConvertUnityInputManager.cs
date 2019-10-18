@@ -22,11 +22,9 @@ namespace CustomInputManager.Editor {
 		
 		public static bool OverwriteProjectSettings()
 		{
-			int length = Application.dataPath.LastIndexOf('/');
-			string projectSettingsFolder = Application.dataPath.Substring(0, length) + "/ProjectSettings";
+			string projectSettingsFolder = Application.dataPath.Substring(0, Application.dataPath.LastIndexOf('/')) + "/ProjectSettings";
 
-			if(!Directory.Exists(projectSettingsFolder))
-			{
+			if(!Directory.Exists(projectSettingsFolder)) {
 				EditorUtility.DisplayDialog("Error", "Unable to get the correct path to the ProjectSetting folder.", "OK");
 				return false;
 			}

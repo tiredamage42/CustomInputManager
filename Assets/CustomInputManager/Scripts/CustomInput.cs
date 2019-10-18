@@ -3,16 +3,24 @@ using System.Collections.Generic;
 using System;
 using System.Collections;
 using CustomInputManager.Internal;
+
+using UnityTools;
 namespace CustomInputManager
 {
-	public partial class CustomInput : MonoBehaviour
+	public partial class CustomInput : Singleton<CustomInput>
 	{
 
 		#region SCENE_INSTANCE
-		static void InitializeInputManagerInstance () {
-			_instance = new GameObject("InputManagerInstance");
-			inst = _instance.AddComponent<CustomInput>();
-			DontDestroyOnLoad(_instance);
+		static void init () { var i = instance; }
+
+		protected override void Awake()
+		{
+			base.Awake();
+
+			m_schemeLookup = new Dictionary<string, ControlScheme>();
+			playerSchemes = new ControlScheme[numPlayers];
+			ScanService.OnAwake();
+			GamepadHandler.OnAwake();
 
 			// try and load custom runtime bindings
 			if (!LoadCustomSchemes()) {
@@ -20,33 +28,17 @@ namespace CustomInputManager
 				LoadDefaultSchemes();
 			}
 		}
-
-		static void init () { 
-			if (_instance == null) {
-				InitializeInputManagerInstance(); 
-			}
-		}
-
-		static GameObject _instance;
-		static CustomInput inst;
-		void Awake()
-		{
-			m_schemeLookup = new Dictionary<string, ControlScheme>();
-			playerSchemes = new ControlScheme[numPlayers];
-			ScanService.OnAwake();
-			GamepadHandler.OnAwake();
-		}
 		void Start () {
 			GamepadHandler.OnStart();
 		}
 
+		HashSet<ControlScheme> updatedSchemes = new HashSet<ControlScheme>();
 		void Update()
 		{
 			float unscaledDeltaTime = Time.unscaledDeltaTime;
 			GamepadHandler.OnUpdate(unscaledDeltaTime);
 
-			HashSet<ControlScheme> updatedSchemes = new HashSet<ControlScheme>();
-
+			updatedSchemes.Clear();
 			for (int i = 0; i < playerSchemes.Length; i++) {
 				if (playerSchemes[i] != null) {
 					if (!updatedSchemes.Contains(playerSchemes[i])) {
@@ -58,10 +50,6 @@ namespace CustomInputManager
 			
 			ScanService.Update(Time.unscaledTime, KeyCode.Escape, 5.0f, numPlayers);
 		}
-
-		public static void RunCoroutine (IEnumerator coroutine) {
-			init(); inst.StartCoroutine(coroutine);
-		}		
 		#endregion
 
 		static List<ControlScheme> m_controlSchemes = new List<ControlScheme>();
@@ -74,7 +62,6 @@ namespace CustomInputManager
 		{
 			m_schemeLookup.Clear();
 
-			// playerSchemes = new ControlScheme[numPlayers];
 			for (int i = 0; i < numPlayers; i++) 
 				playerSchemes[i] = null;
 		
@@ -226,11 +213,19 @@ namespace CustomInputManager
 		public static bool AnyInput(int playerID) { init(); return playerSchemes[playerID].AnyInput(playerID); }
 
 	
-		public static float GetAxis(int key, int playerID=0) { init(); return AxisQuery(key, playerID, NormalAxisQuery); }
-		public static float GetAxisRaw(int key, int playerID=0) { init(); return AxisQuery(key, playerID, RawAxisQuery); }
-		public static bool GetButton(int key, int playerID=0) { init(); return ButtonQuery(key, playerID, ButtonHeldQuery); }
-		public static bool GetButtonDown(int key, int playerID=0) { init(); return ButtonQuery(key, playerID, ButtonDownQuery); }
-		public static bool GetButtonUp(int key, int playerID=0) { init(); return ButtonQuery(key, playerID, ButtonUpQuery); }
+		static Func<InputAction, int, float> _NormalAxisQuery = NormalAxisQuery;
+		public static float GetAxis(int key, int playerID=0) { init(); return AxisQuery(key, playerID, _NormalAxisQuery); }
+
+		static Func<InputAction, int, float> _RawAxisQuery = RawAxisQuery;
+		public static float GetAxisRaw(int key, int playerID=0) { init(); return AxisQuery(key, playerID, _RawAxisQuery); }
+		
+		static Func<InputAction, int, bool> _ButtonHeldQuery = ButtonHeldQuery;
+		public static bool GetButton(int key, int playerID=0) { init(); return ButtonQuery(key, playerID, _ButtonHeldQuery); }
+		static Func<InputAction, int, bool> _ButtonDownQuery = ButtonDownQuery;
+		public static bool GetButtonDown(int key, int playerID=0) { init(); return ButtonQuery(key, playerID, _ButtonDownQuery); }
+		static Func<InputAction, int, bool> _ButtonUpQuery = ButtonUpQuery;
+		public static bool GetButtonUp(int key, int playerID=0) { init(); return ButtonQuery(key, playerID, _ButtonUpQuery); }
+		
 		public static float GetAxis(string name, int playerID=0) { init(); return GetAxis(Name2Key(name, playerID), playerID); }
 		public static float GetAxisRaw(string name, int playerID=0) { init(); return GetAxisRaw(Name2Key(name, playerID), playerID); }
 		public static bool GetButton(string name, int playerID=0) { init(); return GetButton(Name2Key(name, playerID), playerID); }

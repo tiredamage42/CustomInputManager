@@ -4,12 +4,12 @@ using UnityEditor;
 using System.Collections.Generic;
 using CustomInputManager.Internal;
 
+
+using UnityTools.EditorTools;
 namespace CustomInputManager.Editor {
 		
 	public class ControlSchemesTab 
 	{
-
-	
 		public enum MoveDirection { Up, Down }
 		public enum CollectionAction { None, Remove, Add, MoveUp, MoveDown }
 		public enum KeyType { Positive = 0, Negative }
@@ -33,58 +33,48 @@ namespace CustomInputManager.Editor {
 
 		List<ControlScheme> schemes {
 			get {
-				if (Application.isPlaying) 
-					return CustomInput.ControlSchemes;
-				if (loadedElements == null) 
-					InitializeLoadedElements();
-				
+				if (Application.isPlaying) return CustomInput.ControlSchemes;
+				if (loadedElements == null) InitializeLoadedElements();
 				return loadedElements;
 			}
 		}
 
 		bool selectionEmpty { get { return !IsActionSelected && !IsControlSchemeSelected; } }
-		private GUIContent m_gravityInfo;
-		private GUIContent m_sensitivityInfo;
-		private GUIContent m_snapInfo;
-		private GUIContent m_deadZoneInfo;
-		private GUIContent m_plusButtonContent;
-		private GUIContent m_minusButtonContent;
-		private GUIContent m_upButtonContent;
-		private GUIContent m_downButtonContent;
-		private InputAction m_copySource;
-		private KeyCodeField[] m_keyFields;
-		private GUIStyle m_whiteFoldout;
-		private GUIStyle m_warningLabel;
+		GUIContent m_gravityInfo;
+		GUIContent m_sensitivityInfo;
+		GUIContent m_snapInfo;
+		GUIContent m_deadZoneInfo;
+		GUIContent m_plusButtonContent;
+		GUIContent m_minusButtonContent;
+		GUIContent m_upButtonContent;
+		GUIContent m_downButtonContent;
+		InputAction m_copySource;
+		GUIStyle m_warningLabel;
 		#endregion
 
 		#region [Startup]
-
-		public static Texture2D GetUnityIcon(string name)
-		{
+		public static Texture2D GetUnityIcon(string name) {
 			return EditorGUIUtility.Load(name + ".png") as Texture2D;
 		}
-		public static Texture2D GetCustomIcon(string name)
-		{
+		public static Texture2D GetCustomIcon(string name) {
 			return Resources.Load<Texture2D>(InputManager.resourcesFolder + name) as Texture2D;
-		
 		}
 		
-
-		public void OnEnable()
+		HierarchyGUI hierarchyGUI;
+		public void OnEnable(HierarchyGUI hierarchyGUI)
 		{
-			m_gravityInfo = new GUIContent("Gravity When Axis Query", "The speed(in units/sec) at which a digital axis falls towards neutral.");
-			m_sensitivityInfo = new GUIContent("Sensitivity When Axis Query", "The speed(in units/sec) at which an axis moves towards the target value.");
-			m_snapInfo = new GUIContent("Snap When Axis Query", "If input switches direction, do we snap to neutral and continue from there?");// For digital axes only.");
-			m_deadZoneInfo = new GUIContent("Dead Zone", "Size of analog dead zone. Values within this range map to neutral.");
+			this.hierarchyGUI = hierarchyGUI;
+
+			m_gravityInfo = new GUIContent ("Gravity When Axis Query", "The speed(in units/sec) at which a digital axis falls towards neutral.");
+			m_sensitivityInfo = new GUIContent ("Sensitivity When Axis Query", "The speed(in units/sec) at which an axis moves towards the target value.");
+			m_snapInfo = new GUIContent ("Snap When Axis Query", "If input switches direction, do we snap to neutral and continue from there?");// For digital axes only.");
+			m_deadZoneInfo = new GUIContent ("Dead Zone", "Size of analog dead zone. Values within this range map to neutral.");
 			m_plusButtonContent = new GUIContent (GetUnityIcon("ol plus"));
-			m_minusButtonContent = new GUIContent(GetUnityIcon("ol minus"));
-			m_upButtonContent = new GUIContent   (GetCustomIcon("input_editor_arrow_up"));
+			m_minusButtonContent = new GUIContent (GetUnityIcon("ol minus"));
+			m_upButtonContent = new GUIContent (GetCustomIcon("input_editor_arrow_up"));
 			m_downButtonContent = new GUIContent (GetCustomIcon("input_editor_arrow_down"));
 
-			CreateKeyFields();
-
 			InitializeLoadedElements();
-	
 		}
 
 		void SaveDefaultProjectInputsXML() {
@@ -92,17 +82,13 @@ namespace CustomInputManager.Editor {
 			guiChanged = false;
 		}
 		
-
 		void DisplaySaveDialogue () {
 			if (!guiChanged)
 				return;
 
-			if (EditorUtility.DisplayDialog("Input Manager", "Would you like to save changes made to the input schemes?", "Yes", "No")) {
-			
+			if (EditorUtility.DisplayDialog("Input Manager", "Would you like to save changes made to the input schemes?", "Yes", "No"))
 				SaveDefaultProjectInputsXML();
-			}
 		}
-
 		public void Dispose(bool repeat)
 		{
 			if (!repeat) {
@@ -110,61 +96,50 @@ namespace CustomInputManager.Editor {
 				m_copySource = null;
 			}
 		}
-			
 		#endregion
 
 		#region [Menus]
-		
-
-
-		void CreateFileMenu(Rect position)
-		{
+		void CreateFileMenu(Rect position) {
 			GenericMenu fileMenu = new GenericMenu();
-			fileMenu.AddItem(new GUIContent("Overwrite Project Settings"), false, HandleFileMenuOption, 0);// FileMenuOptions.OverwriteProjectSettings);
+			fileMenu.AddItem(new GUIContent("Overwrite Project Settings"), false, HandleFileMenuOption, 0);
 			
 			fileMenu.AddSeparator("");
-			fileMenu.AddItem(new GUIContent("Save Project Inputs"), false, HandleFileMenuOption, 1);//FileMenuOptions.SaveProjectInputs);
+			fileMenu.AddItem(new GUIContent("Save Project Inputs"), false, HandleFileMenuOption, 1);
 			
 			fileMenu.AddSeparator("");
 			
-
-			fileMenu.AddItem(new GUIContent("New Control Scheme"), false, HandleFileMenuOption, 2);//EditMenuOptions.NewControlScheme);
+			fileMenu.AddItem(new GUIContent("New Control Scheme"), false, HandleFileMenuOption, 2);
 			if(IsControlSchemeSelected)
-				fileMenu.AddItem(new GUIContent("New Action"), false, HandleFileMenuOption, 3);// EditMenuOptions.NewInputAction);
+				fileMenu.AddItem(new GUIContent("New Action"), false, HandleFileMenuOption, 3);
 			else
 				fileMenu.AddDisabledItem(new GUIContent("New Action"));
+
 			fileMenu.AddSeparator("");
 
 			if (!selectionEmpty)
-				fileMenu.AddItem(new GUIContent("Duplicate"), false, HandleFileMenuOption, 4);// EditMenuOptions.Duplicate);
+				fileMenu.AddItem(new GUIContent("Duplicate"), false, HandleFileMenuOption, 4);
 			else
 				fileMenu.AddDisabledItem(new GUIContent("Duplicate"));
 
 			if (!selectionEmpty)
-				fileMenu.AddItem(new GUIContent("Delete"), false, HandleFileMenuOption, 5);//EditMenuOptions.Delete);
+				fileMenu.AddItem(new GUIContent("Delete"), false, HandleFileMenuOption, 5);
 			else
 				fileMenu.AddDisabledItem(new GUIContent("Delete"));
 
 			if(IsActionSelected)
-				fileMenu.AddItem(new GUIContent("Copy"), false, HandleFileMenuOption, 6);//EditMenuOptions.Copy);
+				fileMenu.AddItem(new GUIContent("Copy"), false, HandleFileMenuOption, 6);
 			else
 				fileMenu.AddDisabledItem(new GUIContent("Copy"));
 
 			if(m_copySource != null && IsActionSelected)
-				fileMenu.AddItem(new GUIContent("Paste"), false, HandleFileMenuOption, 7);//EditMenuOptions.Paste);
+				fileMenu.AddItem(new GUIContent("Paste"), false, HandleFileMenuOption, 7);
 			else
 				fileMenu.AddDisabledItem(new GUIContent("Paste"));
 
 			fileMenu.DropDown(position);
 		}
-
-		
-		void HandleFileMenuOption(object arg)
-		{
-			int option = (int)arg;
-			
-			switch(option)
-			{
+		void HandleFileMenuOption(object arg) {
+			switch((int)arg) {
 				case 0: ConvertUnityInputManager.OverwriteProjectSettings(); break;
 				case 1: SaveDefaultProjectInputsXML(); break;
 				case 2: CreateNewControlScheme(); break;
@@ -175,28 +150,19 @@ namespace CustomInputManager.Editor {
 				case 7: PasteInputAction(); break;
 			}
 		}
-
-		 void CreateControlSchemeContextMenu(Rect position)
-		{
+		void CreateControlSchemeContextMenu(Rect position) {
 			GenericMenu contextMenu = new GenericMenu();
 			contextMenu.AddItem(new GUIContent("New Action"), false, HandleControlSchemeContextMenuOption, 0);
 			contextMenu.AddSeparator("");
-
 			contextMenu.AddItem(new GUIContent("Duplicate"), false, HandleControlSchemeContextMenuOption, 1);
 			contextMenu.AddItem(new GUIContent("Delete"), false, HandleControlSchemeContextMenuOption, 2);
 			contextMenu.AddSeparator("");
-
 			contextMenu.AddItem(new GUIContent("Move Up"), false, HandleControlSchemeContextMenuOption, 3);
 			contextMenu.AddItem(new GUIContent("Move Down"), false, HandleControlSchemeContextMenuOption, 4);
-
 			contextMenu.DropDown(position);
 		}
-
-		void HandleControlSchemeContextMenuOption(object arg)
-		{
-			int option = (int)arg;
-			switch(option)
-			{
+		void HandleControlSchemeContextMenuOption(object arg) {
+			switch((int)arg) {
 				case 0: CreateNewInputAction(); break;
 				case 1: Duplicate(); break;
 				case 2: Delete(); break;
@@ -204,27 +170,21 @@ namespace CustomInputManager.Editor {
 				case 4: ReorderControlScheme(MoveDirection.Down); break;
 			}
 		}
-
-		void CreateInputActionContextMenu(Rect position)
-		{
+		void CreateInputActionContextMenu(Rect position) {
 			GenericMenu contextMenu = new GenericMenu();
 			contextMenu.AddItem(new GUIContent("Duplicate"), false, HandleInputActionContextMenuOption, 0);
 			contextMenu.AddItem(new GUIContent("Delete"), false, HandleInputActionContextMenuOption, 1);
 			contextMenu.AddItem(new GUIContent("Copy"), false, HandleInputActionContextMenuOption, 2);
 			contextMenu.AddItem(new GUIContent("Paste"), false, HandleInputActionContextMenuOption, 3);
 			contextMenu.AddSeparator("");
-
 			contextMenu.AddItem(new GUIContent("Move Up"), false, HandleInputActionContextMenuOption, 4);
 			contextMenu.AddItem(new GUIContent("Move Down"), false, HandleInputActionContextMenuOption, 5);
-
 			contextMenu.DropDown(position);
 		}
 
-		 void HandleInputActionContextMenuOption(object arg)
+		void HandleInputActionContextMenuOption (object arg)
 		{
-			int option = (int)arg;
-			switch(option)
-			{
+			switch((int)arg) {
 				case 0: Duplicate(); break;
 				case 1: Delete(); break;
 				case 2: CopyInputAction(); break;
@@ -234,180 +194,132 @@ namespace CustomInputManager.Editor {
 			}
 		}
 
-		 void CreateNewControlScheme()
-		{
+		void CreateNewControlScheme () {
 			schemes.Add(new ControlScheme());
-
-			InputManagerWindow.ResetSelections();
-			selectedControlSchemeIndex = schemes.Count - 1;
+			hierarchyGUI.ResetSelections();
+			hierarchyGUI.selections[0] = schemes.Count - 1;
 			InputManagerWindow.instance.Repaint();
 		}
 
-		bool IsControlSchemeSelected { get { return selectedControlSchemeIndex >= 0; } }
-		bool IsActionSelected { get { return selectedActionIndex >= 0; } }
+		bool IsControlSchemeSelected { get { return hierarchyGUI.selections[0] >= 0; } }
+		bool IsActionSelected { get { return hierarchyGUI.selections[1] >= 0; } }
 		
-		int selectedControlSchemeIndex { 
-			get { return InputManagerWindow.GetSelection(0); } 
-			set { InputManagerWindow.SetSelection(0, value); } 
-		}
-		int selectedActionIndex { 
-			get { return InputManagerWindow.GetSelection(1); } 
-			set { InputManagerWindow.SetSelection(1, value); } 
-		}
-
-
-		 void CreateNewInputAction()
-		{
-			if(IsControlSchemeSelected)
-			{
-				ControlScheme scheme = schemes[selectedControlSchemeIndex];
+		void CreateNewInputAction() {
+			if(IsControlSchemeSelected) {
+				ControlScheme scheme = schemes[hierarchyGUI.selections[0]];
 				scheme.CreateNewAction("New Action", "New Action Display Name");
-				selectedActionIndex = scheme.Actions.Count - 1;
-				ResetKeyFields();
+				hierarchyGUI.selections[1] = scheme.Actions.Count - 1;
 				InputManagerWindow.instance.Repaint();
 			}
 		}
 
-
-
-
-		void Duplicate()
-		{
-			if(IsActionSelected)
+		void Duplicate() {
+			if (IsActionSelected)
 				DuplicateInputAction();
-			else if(IsControlSchemeSelected)
+			else if (IsControlSchemeSelected)
 				DuplicateControlScheme();
-			
 		}
-		InputAction DuplicateInputAction(InputAction source)
-		{
+
+		InputAction DuplicateInputAction(InputAction source) {
 			return DuplicateInputAction(source.Name, source);
 		}
-
-
-		InputAction DuplicateInputAction(string name, InputAction source)
-		{
+		InputAction DuplicateInputAction(string name, InputAction source) {
 			InputAction a = new InputAction("_");
 			CopyInputAction(a, source);
 			a.Name = name;
 			return a;
 		}
-		void DuplicateInputAction()
-		{
-			ControlScheme scheme = schemes[selectedControlSchemeIndex];
-			InputAction source = scheme.Actions[selectedActionIndex];
 
-
+		void DuplicateInputAction () {
+			ControlScheme scheme = schemes[hierarchyGUI.selections[0]];
+			InputAction source = scheme.Actions[hierarchyGUI.selections[1]];
 			InputAction action = DuplicateInputAction(source.Name + " Copy", source);
-			scheme.Actions.Insert(selectedActionIndex + 1, action);
-			
-			selectedActionIndex++;
-
+			scheme.Actions.Insert(hierarchyGUI.selections[1] + 1, action);
+			hierarchyGUI.selections[1]++;
 			InputManagerWindow.instance.Repaint();
 		}
 
-		void DuplicateControlScheme()
-		{
-			ControlScheme source = schemes[selectedControlSchemeIndex];
+		void DuplicateControlScheme () {
+			ControlScheme source = schemes[hierarchyGUI.selections[0]];
 
 			ControlScheme duplicate = new ControlScheme();
 			duplicate.Name = source.Name + " Copy";
 			duplicate.Actions = new List<InputAction>();
-			foreach(var action in source.Actions)
-				duplicate.Actions.Add(DuplicateInputAction(action));
 			
-			schemes.Insert(selectedControlSchemeIndex + 1, duplicate);
-			selectedControlSchemeIndex++;
+			foreach(var action in source.Actions) duplicate.Actions.Add(DuplicateInputAction(action));
+			
+			schemes.Insert(hierarchyGUI.selections[0] + 1, duplicate);
+			hierarchyGUI.selections[0]++;
 
 			InputManagerWindow.instance.Repaint();
 		}
 
 		void Delete()
 		{
-			if(IsActionSelected)
-			{
-				ControlScheme scheme = schemes[selectedControlSchemeIndex];
-				
-				if(selectedActionIndex >= 0 && selectedActionIndex < scheme.Actions.Count)
-					scheme.Actions.RemoveAt(selectedActionIndex);
-				
-				
+			if(IsActionSelected) {
+				ControlScheme scheme = schemes[hierarchyGUI.selections[0]];
+				if(hierarchyGUI.selections[1] >= 0 && hierarchyGUI.selections[1] < scheme.Actions.Count)
+					scheme.Actions.RemoveAt(hierarchyGUI.selections[1]);
 			}
 			else if(IsControlSchemeSelected)
-			{
-				schemes.RemoveAt(selectedControlSchemeIndex);
-			}
-
-			InputManagerWindow.ResetSelections();
+				schemes.RemoveAt(hierarchyGUI.selections[0]);
+			
+			hierarchyGUI.ResetSelections();
 			InputManagerWindow.instance.Repaint();
 		}
 
 		void CopyInputAction()
 		{
-			m_copySource = DuplicateInputAction(schemes[selectedControlSchemeIndex].Actions[selectedActionIndex]);
+			m_copySource = DuplicateInputAction(schemes[hierarchyGUI.selections[0]].Actions[hierarchyGUI.selections[1]]);
 		}
 		void PasteInputAction()
 		{
-			CopyInputAction(schemes[selectedControlSchemeIndex].Actions[selectedActionIndex], m_copySource);
+			CopyInputAction(schemes[hierarchyGUI.selections[0]].Actions[hierarchyGUI.selections[1]], m_copySource);
 		}
 			
-
-		 void ReorderControlScheme(MoveDirection dir)
-		{
-			if(IsControlSchemeSelected)
-			{
-				var index = selectedControlSchemeIndex;
-
-				if(dir == MoveDirection.Up && index > 0)
-				{
+		void ReorderControlScheme(MoveDirection dir) {
+			if(IsControlSchemeSelected) {
+				var index = hierarchyGUI.selections[0];
+				if (dir == MoveDirection.Up && index > 0) {
 					var temp = schemes[index];
 					schemes[index] = schemes[index - 1];
 					schemes[index - 1] = temp;
-					InputManagerWindow.ResetSelections();
-					selectedControlSchemeIndex = index - 1;
+					hierarchyGUI.ResetSelections();
+					hierarchyGUI.selections[0] = index - 1;
 				}
-				else if(dir == MoveDirection.Down && index < schemes.Count - 1)
-				{
+				else if(dir == MoveDirection.Down && index < schemes.Count - 1) {
 					var temp = schemes[index];
 					schemes[index] = schemes[index + 1];
 					schemes[index + 1] = temp;
-					InputManagerWindow.ResetSelections();
-					selectedControlSchemeIndex = index + 1;
+					hierarchyGUI.ResetSelections();
+					hierarchyGUI.selections[0] = index + 1;
 				}
 			}
 		}
-
-		 void SwapActions(ControlScheme scheme, int fromIndex, int toIndex)
-		{
-			if(fromIndex >= 0 && fromIndex < scheme.Actions.Count && toIndex >= 0 && toIndex < scheme.Actions.Count)
-			{
+		void SwapActions(ControlScheme scheme, int fromIndex, int toIndex) {
+			if (fromIndex >= 0 && fromIndex < scheme.Actions.Count && toIndex >= 0 && toIndex < scheme.Actions.Count) {
 				var temp = scheme.Actions[toIndex];
 				scheme.Actions[toIndex] = scheme.Actions[fromIndex];
 				scheme.Actions[fromIndex] = temp;
 			}
 		}
 
-		 void ReorderInputAction(MoveDirection dir)
+		void ReorderInputAction(MoveDirection dir)
 		{
 			if(IsActionSelected)
 			{
-				var scheme = schemes[selectedControlSchemeIndex];
-				var schemeIndex = selectedControlSchemeIndex;
-				var actionIndex = selectedActionIndex;
+				var scheme = schemes[hierarchyGUI.selections[0]];
+				var actionIndex = hierarchyGUI.selections[1];
 
 				if(dir == MoveDirection.Up && actionIndex > 0)
 				{
 					SwapActions(scheme, actionIndex, actionIndex - 1);
-					InputManagerWindow.ResetSelections();
-					selectedControlSchemeIndex = schemeIndex;
-					selectedActionIndex = actionIndex - 1;
+					hierarchyGUI.selections[1] = actionIndex - 1;
 				}
 				else if(dir == MoveDirection.Down && actionIndex < scheme.Actions.Count - 1)
 				{
 					SwapActions(scheme, actionIndex, actionIndex + 1);
-					InputManagerWindow.ResetSelections();
-					selectedControlSchemeIndex = schemeIndex;
-					selectedActionIndex = actionIndex + 1;
+					hierarchyGUI.selections[1] = actionIndex + 1;
 				}
 			}
 		}
@@ -431,40 +343,17 @@ namespace CustomInputManager.Editor {
 		#region [OnGUI]
 
 		static bool guiChanged;
-		public void OnGUI()
+		public void OnGUI(Rect position)
 		{
-
 			EditorGUI.BeginChangeCheck();
 			
 			EnsureGUIStyles();
 
-			if ((schemes.Count <= 0) || (IsControlSchemeSelected && selectedControlSchemeIndex >= schemes.Count) || (IsActionSelected && selectedActionIndex >= schemes[selectedControlSchemeIndex].Actions.Count))
-				InputManagerWindow.ResetSelections();					
-
-            
-			// HierarchyGUI.UpdateHierarchyPanelWidth(InputManagerWindow.tabsOffYOffset);
-
-			// HierarchyGUI.DrawMainPanel(InputManagerWindow.tabsOffYOffset, DrawSelected);
-
-			// if (HierarchyGUI.DrawHierarchyPanel(InputManagerWindow.tabsOffYOffset, true, BuildHierarchyElementsList())) {
-			// 	ResetKeyFields();
-			// }
-
-			if (HierarchyGUI.Draw (InputManagerWindow.tabsOffYOffset, true, BuildHierarchyElementsList(), DrawSelected, CreateFileMenu)) {
-				ResetKeyFields();
-			}
-
-			// HierarchyGUI.DrawMainToolbar(CreateFileMenu, InputManagerWindow.tabsOffYOffset);
-			
-
-			
-
-
-
+			if (hierarchyGUI.Draw(InputManagerWindow.instance, position, true, BuildHierarchyElementsList(), DrawSelected, CreateFileMenu)) { }
+				
 			if (EditorGUI.EndChangeCheck()) {
 				guiChanged = true;
 			}
-			
 		}
 
 		List<HieararchyGUIElement> BuildSubElements (ControlScheme scheme) {
@@ -486,9 +375,9 @@ namespace CustomInputManager.Editor {
 			if (IsControlSchemeSelected) {
 
 				if(IsActionSelected)
-					DrawInputActionFields(position, schemes[selectedControlSchemeIndex].Actions[selectedActionIndex]);
+					DrawInputActionFields(position, schemes[hierarchyGUI.selections[0]].Actions[hierarchyGUI.selections[1]]);
 				else
-					DrawControlSchemeFields(position, schemes[selectedControlSchemeIndex]);
+					DrawControlSchemeFields(position, schemes[hierarchyGUI.selections[0]]);
 			}
 		}
 
@@ -507,11 +396,10 @@ namespace CustomInputManager.Editor {
 			GUILayout.EndArea();
 		}
 
-		 void DrawInputActionFields(Rect position, InputAction action)
+		void DrawInputActionFields(Rect position, InputAction action)
 		{
 			bool collectionChanged = false;
 			float viewRectHeight = CalculateInputActionViewRectHeight(action);
-			viewRectHeight += InputManagerWindow.tabsOffYOffset;
 			float itemPosY = 0.0f;
 			float contentWidth = position.width - 10.0f;
 			Rect viewRect = new Rect(-5.0f, -5.0f, position.width - 10.0f, viewRectHeight - 10.0f);
@@ -618,137 +506,83 @@ namespace CustomInputManager.Editor {
 			}
 		}
 
-		 CollectionAction DrawInputBindingFields(Rect position, string label, InputAction action, int bindingIndex)
+		CollectionAction DrawInputBindingFields(Rect position, string label, InputAction action, int bindingIndex)
 		{
 			Rect headerRect = new Rect(position.x + 5.0f, position.y, position.width, INPUT_FIELD_HEIGHT);
-			Rect removeButtonRect = new Rect(position.width - 25.0f, position.y + 2, 20.0f, 20.0f);
-			Rect addButtonRect = new Rect(removeButtonRect.x - 20.0f, position.y + 2, 20.0f, 20.0f);
-			Rect downButtonRect = new Rect(addButtonRect.x - 20.0f, position.y + 2, 20.0f, 20.0f);
-			Rect upButtonRect = new Rect(downButtonRect.x - 20.0f, position.y + 2, 20.0f, 20.0f);
 			Rect layoutArea = new Rect(position.x + 10.0f, position.y + INPUT_FIELD_HEIGHT + FIELD_SPACING + 5.0f, position.width - 12.5f, position.height - (INPUT_FIELD_HEIGHT + FIELD_SPACING + 5.0f));
 			InputBinding binding = action.bindings[bindingIndex];
-			KeyCode positive = binding.Positive, negative = binding.Negative;
 			CollectionAction result = CollectionAction.None;
 
 			EditorGUI.LabelField(headerRect, label, EditorStyles.boldLabel);
 			
 			GUILayout.BeginArea(layoutArea);
 			binding.Type = (InputType)EditorGUILayout.EnumPopup("Type", binding.Type);
+			InputType t = binding.Type;
 
-
-			if (binding.Type == InputType.MouseButton) {
-				binding.mouseButton = EditorGUILayout.Popup("Button", binding.mouseButton, InputBinding.mouseButtonNames);// m_axisOptions);
-			}
-
-			if(binding.Type == InputType.KeyButton || binding.Type == InputType.DigitalAxis) {
-				DrawKeyCodeField(action, bindingIndex, KeyType.Positive);
-			}
-
-			if(binding.Type == InputType.DigitalAxis) {
-				DrawKeyCodeField(action, bindingIndex, KeyType.Negative);
-			}
-
-			if(binding.Type == InputType.MouseAxis) {
-				binding.MouseAxis = EditorGUILayout.Popup("Axis", binding.MouseAxis, InputBinding.mouseAxisNames);// m_axisOptions);
-			}
-
-			if(binding.Type == InputType.GamepadButton) {
+			if (t== InputType.KeyButton || t == InputType.DigitalAxis) 
+				binding.Positive = (KeyCode)EditorGUILayout.EnumPopup("Positive", binding.Positive);
+			if(t == InputType.DigitalAxis) 
+				binding.Negative = (KeyCode)EditorGUILayout.EnumPopup("Negative", binding.Negative);
+			if(t == InputType.MouseAxis) 
+				binding.MouseAxis = EditorGUILayout.Popup("Axis", binding.MouseAxis, InputBinding.mouseAxisNames);
+			if(t == InputType.GamepadButton) 
 				binding.GamepadButton = (GamepadButton)EditorGUILayout.EnumPopup("Button", binding.GamepadButton);
-			}
-
-			if(binding.Type == InputType.GamepadAnalogButton || binding.Type == InputType.GamepadAxis) {
+			if(t == InputType.GamepadAnalogButton || t == InputType.GamepadAxis) 
 				binding.GamepadAxis = (GamepadAxis)EditorGUILayout.EnumPopup("Axis", binding.GamepadAxis);
-			}
+			
+			bool isButton = t == InputType.GamepadButton || t == InputType.KeyButton;
+			bool isAxis = t == InputType.GamepadAxis || t == InputType.MouseAxis;
+			bool isFakeAxis = t == InputType.GamepadAnalogButton || t == InputType.DigitalAxis;
 
-			if (
-				binding.Type == InputType.MouseButton ||
-				binding.Type == InputType.DigitalAxis ||
-				binding.Type == InputType.KeyButton ||
-				binding.Type == InputType.GamepadButton ||
-				binding.Type == InputType.GamepadAnalogButton
-			) {
-				binding.Gravity = EditorGUILayout.FloatField(m_gravityInfo, binding.Gravity);
-			}
+			if (isAxis) binding.updateAsButton = EditorGUILayout.Toggle("Update As Button", binding.updateAsButton);
+			if (isButton) binding.updateAsAxis = EditorGUILayout.Toggle("Update As Axis", binding.updateAsAxis);
+			
+			bool buttonAsAxis = isButton && binding.updateAsAxis;
+			bool axisAsButton = isAxis && binding.updateAsButton;
 
-			if (
-				binding.Type == InputType.MouseButton ||
-				binding.Type == InputType.DigitalAxis ||
-				binding.Type == InputType.KeyButton ||
-				binding.Type == InputType.GamepadButton ||
-				binding.Type == InputType.GamepadAnalogButton ||
-				binding.Type == InputType.MouseAxis
-			) {
-				binding.Sensitivity = EditorGUILayout.FloatField(m_sensitivityInfo, binding.Sensitivity);
-			}
-
-			if(binding.Type == InputType.GamepadAxis || binding.Type == InputType.GamepadAnalogButton || binding.Type == InputType.MouseAxis) {
+			if (isAxis || t == InputType.GamepadAnalogButton) {
 				binding.DeadZone = EditorGUILayout.FloatField(m_deadZoneInfo, binding.DeadZone);
 			}
 
-			binding.SnapWhenReadAsAxis = EditorGUILayout.Toggle(m_snapInfo, binding.SnapWhenReadAsAxis);
+			if (t == InputType.DigitalAxis || buttonAsAxis)  {
+				binding.Gravity = EditorGUILayout.FloatField(m_gravityInfo, binding.Gravity);
+				binding.SnapWhenReadAsAxis = EditorGUILayout.Toggle(m_snapInfo, binding.SnapWhenReadAsAxis);
+			}
 
-			binding.InvertWhenReadAsAxis = EditorGUILayout.Toggle("Invert When Axis Query", binding.InvertWhenReadAsAxis);
-
-			if( binding.Type == InputType.DigitalAxis || binding.Type == InputType.GamepadAnalogButton || binding.Type == InputType.GamepadAxis || binding.Type == InputType.MouseAxis) {
+			if (isFakeAxis || axisAsButton) {
 				binding.useNegativeAxisForButton = EditorGUILayout.Toggle("Use Negative Axis For Button Query", binding.useNegativeAxisForButton);
 			}
 
 			binding.rebindable = EditorGUILayout.Toggle("Rebindable", binding.rebindable);
-			binding.sensitivityEditable = EditorGUILayout.Toggle("Sensitivity Editable", binding.sensitivityEditable);
-			binding.invertEditable = EditorGUILayout.Toggle("Invert Editable", binding.invertEditable);
-
-
+			
+			if (isFakeAxis || isAxis || buttonAsAxis) {
+				binding.Sensitivity = EditorGUILayout.FloatField(m_sensitivityInfo, binding.Sensitivity);
+				binding.sensitivityEditable = EditorGUILayout.Toggle("Sensitivity Editable", binding.sensitivityEditable);
+				binding.InvertWhenReadAsAxis = EditorGUILayout.Toggle("Invert When Axis Query", binding.InvertWhenReadAsAxis);
+				binding.invertEditable = EditorGUILayout.Toggle("Invert Editable", binding.invertEditable);
+			}
+			
 			GUILayout.EndArea();
 
-			if(action.bindings.Count < InputAction.MAX_BINDINGS)
-			{
-				if(GUI.Button(addButtonRect, m_plusButtonContent, EditorStyles.label))
-					result = CollectionAction.Add;
-			}
-			if(GUI.Button(removeButtonRect, m_minusButtonContent, EditorStyles.label))
-				result = CollectionAction.Remove;
-			if(GUI.Button(upButtonRect, m_upButtonContent, EditorStyles.label))
-				result = CollectionAction.MoveUp;
-			if(GUI.Button(downButtonRect, m_downButtonContent, EditorStyles.label))
-				result = CollectionAction.MoveDown;
+			Rect r = new Rect(position.width - 25.0f, position.y + 2, 20.0f, 20.0f);
+			if(action.bindings.Count < InputAction.MAX_BINDINGS) if(GUI.Button(r, m_plusButtonContent, GUITools.label)) result = CollectionAction.Add;
+			r.x -= r.width;
+			if(GUI.Button(r, m_minusButtonContent, GUITools.label)) result = CollectionAction.Remove;
+			r.x -= r.width;
+			if(GUI.Button(r, m_upButtonContent, GUITools.label)) result = CollectionAction.MoveUp;
+			r.x -= r.width;
+			if(GUI.Button(r, m_downButtonContent, GUITools.label)) result = CollectionAction.MoveDown;
+			r.x -= r.width;
+			
 			return result;
 		}
 
-		void DrawKeyCodeField(InputAction action, int bindingIndex, KeyType keyType)
-		{
-			InputBinding binding = action.bindings[bindingIndex];
-			int kfIndex = bindingIndex * 2;
-
-			if(keyType == KeyType.Positive)
-				binding.Positive = m_keyFields[kfIndex].OnGUI("Positive", binding.Positive);
-			else
-				binding.Negative = m_keyFields[kfIndex + 1].OnGUI("Negative", binding.Negative);
-			
-		}
 		#endregion
 
 		#region [Utility]
-		void CreateKeyFields() {
-			m_keyFields = new KeyCodeField[InputAction.MAX_BINDINGS * 2];
-			for(int i = 0; i < m_keyFields.Length; i++)
-				m_keyFields[i] = new KeyCodeField();
-		}
-
-		void ResetKeyFields() {
-			for(int i = 0; i < m_keyFields.Length; i++) m_keyFields[i].Reset();	
-		}
-
+		
 		void EnsureGUIStyles()
 		{
-			if(m_whiteFoldout == null) {
-				m_whiteFoldout = new GUIStyle(EditorStyles.foldout);
-				m_whiteFoldout.normal.textColor = Color.white;
-				m_whiteFoldout.onNormal.textColor = Color.white;
-				m_whiteFoldout.active.textColor = Color.white;
-				m_whiteFoldout.onActive.textColor = Color.white;
-				m_whiteFoldout.focused.textColor = Color.white;
-				m_whiteFoldout.onFocused.textColor = Color.white;
-			}
 			if(m_warningLabel == null) {
 				m_warningLabel = new GUIStyle(EditorStyles.largeLabel) {
 					alignment = TextAnchor.MiddleCenter,
@@ -766,43 +600,48 @@ namespace CustomInputManager.Editor {
 		}
 
 
-		 float CalculateInputActionViewRectHeight(InputAction action)
+		float CalculateInputActionViewRectHeight(InputAction action)
 		{
 			float height = INPUT_FIELD_HEIGHT * 2 + FIELD_SPACING * 2 + INPUT_ACTION_SPACING;
-			if(action.bindings.Count > 0)
-			{
-				foreach(var binding in action.bindings)
-					height += CalculateInputBindingViewRectHeight(binding) + INPUT_BINDING_SPACING;
-
+			if(action.bindings.Count > 0) {
+				foreach(var binding in action.bindings) height += CalculateInputBindingViewRectHeight(binding) + INPUT_BINDING_SPACING;
 				height += 15.0f;
 			}
-			else
-				height += BUTTON_HEIGHT;
+			else height += BUTTON_HEIGHT;
 			return height;
 		}
 
-		 float CalculateInputBindingViewRectHeight(InputBinding binding)
+		float CalculateInputBindingViewRectHeight(InputBinding binding)
 		{
-			int numberOfFields = 12;
-			switch(binding.Type)
-			{
-			case InputType.KeyButton: numberOfFields = 5; break;
-			case InputType.MouseButton: numberOfFields = 5; break;
-			case InputType.MouseAxis: numberOfFields = 6; break;
-			case InputType.DigitalAxis: numberOfFields = 7; break;
-			case InputType.GamepadButton: numberOfFields = 5; break;
-			case InputType.GamepadAnalogButton: numberOfFields = 7; break;
-			case InputType.GamepadAxis: numberOfFields = 5; break;
-			}
 
-			numberOfFields += 2;    //	Header and type
-			numberOfFields += 3; //public bool rebindable, sensitivityEditable, invertEditable;
+			int numberOfFields = 3;
+
+			InputType t = binding.Type;
+			if (t== InputType.KeyButton || t == InputType.DigitalAxis) numberOfFields++;
+			if(t == InputType.DigitalAxis) numberOfFields++;
+			if(t == InputType.MouseAxis) numberOfFields++;
+			if(t == InputType.GamepadButton) numberOfFields++;
+			if(t == InputType.GamepadAnalogButton || t == InputType.GamepadAxis) numberOfFields++;
+			
+			bool isButton = t == InputType.GamepadButton || t == InputType.KeyButton;
+			bool isAxis = t == InputType.GamepadAxis || t == InputType.MouseAxis;
+			bool isFakeAxis = t == InputType.GamepadAnalogButton || t == InputType.DigitalAxis;
+
+			if (isAxis) numberOfFields++;
+			if (isButton) numberOfFields++;
+			
+			bool buttonAsAxis = isButton && binding.updateAsAxis;
+			bool axisAsButton = isAxis && binding.updateAsButton;
+
+			if (t == InputType.DigitalAxis || buttonAsAxis) numberOfFields+=2;
+			if (isAxis || t == InputType.GamepadAnalogButton) numberOfFields++;
+			if (isFakeAxis || axisAsButton) numberOfFields++;
+			if (isFakeAxis || isAxis || buttonAsAxis) numberOfFields+=4;
+			
 
 			float height = INPUT_FIELD_HEIGHT * numberOfFields + FIELD_SPACING * numberOfFields + 10.0f;
-			if(binding.Type == InputType.KeyButton && (Event.current == null || Event.current.type != EventType.KeyUp))
-			{
-				if(IsGenericJoystickButton(binding.Positive))
-					height += JOYSTICK_WARNING_SPACING + JOYSTICK_WARNING_HEIGHT;
+			if(t == InputType.KeyButton && (Event.current == null || Event.current.type != EventType.KeyUp)) {
+				if(IsGenericJoystickButton(binding.Positive)) height += JOYSTICK_WARNING_SPACING + JOYSTICK_WARNING_HEIGHT;
 			}
 
 			return height;

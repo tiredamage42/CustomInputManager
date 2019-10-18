@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using UnityTools;
 namespace CustomInputManager.Internal {
     /*
         handle user defined custom inputs 
@@ -22,11 +23,8 @@ namespace CustomInputManager.Internal {
 		public static List<ControlScheme> LoadCustomControls()
 		{
 			List<ControlScheme> schemes = null;
-#if UNITY_WINRT && !UNITY_EDITOR
-			if(UnityEngine.Windows.File.Exists(customControlBindingsPath))
-#else
+
 			if(System.IO.File.Exists(customControlBindingsPath))
-#endif
 			{
 				schemes = new InputLoaderXML(customControlBindingsPath).Load();
 				Debug.Log("Loaded custom control bindings from :: " + customControlBindingsPath);
@@ -38,7 +36,7 @@ namespace CustomInputManager.Internal {
 			if (ScanService.isScanning) {
                 return false;
             }
-            CustomInput.RunCoroutine(StartInputScanDelayed(inputBinding, changingPositiveDigitalAxis, onStopScan));
+			UpdateManager.instance.StartCoroutine(StartInputScanDelayed(inputBinding, changingPositiveDigitalAxis, onStopScan));
             return true;
 		}
 

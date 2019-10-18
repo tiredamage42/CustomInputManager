@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using UnityEditor;
 
-using CustomEditorTools;
+
+using UnityTools;
+using UnityTools.EditorTools;
 using CustomInputManager.Internal;
 namespace CustomInputManager.Editor {
     public class GamepadProfilesEditor 
@@ -24,9 +26,8 @@ namespace CustomInputManager.Editor {
                 path = dir + "/" + name + x.ToString() + ".asset";
                 x++;
             }
-            GenericGamepadProfile profile = ScriptableObject.CreateInstance<GenericGamepadProfile>();
-            AssetDatabase.CreateAsset(profile, path);
 
+            GenericGamepadProfile profile = AssetTools.CreateScriptableObject<GenericGamepadProfile>(path, true);
             NewProfile(profile);
         
             return profile;
@@ -50,18 +51,10 @@ namespace CustomInputManager.Editor {
             
             t.ApplyModifiedProperties();
             target.m_dpadType = source.m_dpadType;
-            target.unityJoystickNames = CopyArray(source.unityJoystickNames);
-            target.platforms = CopyArray(source.platforms);
+            target.platforms.list = source.platforms.list.MakeCopy();
             EditorUtility.SetDirty(target);
         }
-        static T[] CopyArray<T> (T[] s) {
-            T[] t = new T[s.Length];
-            for (int i = 0; i < s.Length; i++) {
-                t[i] = s[i];
-            }
-            return t;
-        }
-
+        
         string[] axes = new string[] {
             "m_leftStickXAxis", "m_leftStickYAxis",
             "m_rightStickXAxis", "m_rightStickYAxis",
@@ -77,22 +70,15 @@ namespace CustomInputManager.Editor {
             "m_dpadUpButton", "m_dpadDownButton", "m_dpadLeftButton", "m_dpadRightButton",
         };
 
-        
-		
-
-
 		public void DeleteProfile(GenericGamepadProfile toDelete) {
             if (EditorUtility.DisplayDialog("Delete Gamepad Profile", "Are you sure you want to delete profile: " + toDelete.name + "?", "Yes", "No")) {
-                
                 InputManager.instance._gamepads.Remove(toDelete);
                 EditorUtility.SetDirty(InputManager.instance);
-
                 AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(toDelete));
-
-
 				ProjectTools.RefreshAndSave();
 			}
         }
+
         public void RenameProfile(GenericGamepadProfile profile, string newName) {
 			AssetDatabase.RenameAsset(AssetDatabase.GetAssetPath(profile), newName);
 			ProjectTools.RefreshAndSave();
@@ -147,8 +133,10 @@ namespace CustomInputManager.Editor {
             profileSO.Update();
 
 			EditorGUILayout.PropertyField(profileSO.FindProperty("unityJoystickNames"), true);
+            EditorGUILayout.PropertyField(profileSO.FindProperty("joystickAliases"), true);
             EditorGUILayout.PropertyField(profileSO.FindProperty("platforms"), true);
 
+            
 			SerializedProperty m_dpadType = profileSO.FindProperty("m_dpadType");
             EditorGUILayout.PropertyField(m_dpadType);
 

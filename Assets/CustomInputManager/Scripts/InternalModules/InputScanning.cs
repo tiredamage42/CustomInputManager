@@ -187,12 +187,8 @@ namespace CustomInputManager.Internal
 			int axes = 8;
 			for(int i = 0; i < axes; i++) {
 				GamepadAxis axis = (GamepadAxis)i;
-				
-				// for (int x = 0; x < InputBinding.MAX_JOYSTICKS; x++) {
-				for (int x = 0; x < numJoysticks; x++) {
-					
+				for (int x = 0; x < numJoysticks; x++) {	
 					float axisRaw = GamepadHandler.GetAxisRaw(axis, x, .2f);
-
 					if(Mathf.Abs(axisRaw) >= 1.0f) {
 						if(scanHandler(ScanResult.GamepadAxisResult(axis, axisRaw))) {
 							return EndScan();

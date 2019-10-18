@@ -1,14 +1,18 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using GameSettingsSystem;
+using UnityTools.GameSettingsSystem;
 namespace CustomInputManager.Internal {
 
     [CreateAssetMenu(menuName="Custom Input Manager/Replacement Input Manager", fileName="InputManager")]
     public class InputManager : GameSettingsObject
-    // public class InputManager : ScriptableObject
-    
-    
     {
+        
+        public override bool ShowInGameSettingsWindow () {
+            return false;
+        }
+            
+
+
         public int _maxPlayers = 2;
         
         [Space] [Header("Gamepads")]
@@ -56,18 +60,14 @@ namespace CustomInputManager.Internal {
 
         // just for editor
         public const string resourcesFolder = "CustomInputManager/";
-        // const string resourcesPath = resourcesFolder + "InputManager";
         
         static InputManager _instance;
         public static InputManager instance {
             get {
                 if (_instance == null) {
                     _instance = GameSettings.GetSettings<InputManager>();
-                    // _instance = Resources.Load<InputManager>(resourcesPath);
                 }
-                
                 if (_instance == null) {
-                    // Debug.LogError("Input Manager object not found! Create a new one at path: 'Resources/" + resourcesPath + ".asset.\nProject View -> Right Click -> Custom Input Manager -> Replacement Input Manager");
                     Debug.LogError("Input Manager object not found! Create a new one.\nProject View -> Right Click -> Custom Input Manager -> Replacement Input Manager");
                 }
                 return _instance;       

@@ -1,15 +1,13 @@
 ﻿using UnityEngine;
 using UnityEditor;
+
 using CustomInputManager.Internal;
-using CustomEditorTools;
+using UnityTools.EditorTools;
 namespace CustomInputManager.Editor {
 	public class InputSettingsTab
 	{
-
 		SerializedObject serializedObject;
-        string [] props = new string[] {
-            "_maxPlayers", "_dpadGravity", "_dpadSensitivity", "_dpadSnap", "_joystickCheckFrequency",
-        };
+        string [] props = new string[] { "_maxPlayers", "_dpadGravity", "_dpadSensitivity", "_dpadSnap", "_joystickCheckFrequency" };
 
         void DrawInputManagerSettings () {
             if (Application.isPlaying) {
@@ -24,7 +22,7 @@ namespace CustomInputManager.Editor {
             }
             GUI.enabled = true;
         }
-        public void OnGUI()
+        public void OnGUI(Rect position)
 		{
             if (serializedObject == null) serializedObject = new SerializedObject( InputManager.instance );
             serializedObject.Update();

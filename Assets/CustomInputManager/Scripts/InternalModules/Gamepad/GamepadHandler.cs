@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 using System.Linq;
 using CustomInputManager.Internal;
+
+using UnityTools;
 namespace CustomInputManager
 {
     public enum GamepadAxis
@@ -29,7 +31,6 @@ namespace CustomInputManager
 
     public enum GamePadPossiblePlatform { Linux, OSX, Windows, PS4, XboxOne };
     
-    // [System.Serializable] public class GamepadHandler
     
     public static class GamepadHandler
     {   
@@ -61,9 +62,9 @@ namespace CustomInputManager
         static GenericGamepadProfile GetProfileForJoystickName(string joystickName, List<GenericGamepadProfile> allProfiles) {// GenericGamepadProfile[] allProfiles) {
             for (int i = 0; i < allProfiles.Count; i++) {
                 GenericGamepadProfile p = allProfiles[i];
-                if (CurrentPlatformInGamepadPlatforms(ToList(p.platforms))) {
-                    for (int n = 0; n < p.unityJoystickNames.Length; n++) {
-                        if (joystickName.Contains( p.unityJoystickNames[n] ) ) {
+                if (CurrentPlatformInGamepadPlatforms(ToList<GamePadPossiblePlatform>(p.platforms))) {
+                    for (int n = 0; n < p.joystickAliases.Length; n++) {
+                        if (joystickName.Contains( p.joystickAliases[n] ) ) {
                             return p;
                         }
                     }
@@ -101,7 +102,6 @@ namespace CustomInputManager
             }
         }
 
-        // static GenericGamepadProfile[] gamepadProfilesPerGamepad, allGamepadProfiles;
         static GenericGamepadProfile[] gamepadProfilesPerGamepad;
         static List<GenericGamepadProfile> allGamepadProfiles {
             get {
@@ -110,16 +110,11 @@ namespace CustomInputManager
         }
 
         public const string gamepadProfilesResourcesDirectory = "GamepadProfiles";
-        // const string gamepadProfilesResourcesPath = InputManager.resourcesFolder + gamepadProfilesResourcesDirectory;
-
-        // public static GenericGamepadProfile[] LoadAllGamepadProfiles () {
-        //     return Resources.LoadAll(gamepadProfilesResourcesPath, typeof(GenericGamepadProfile)).Cast<GenericGamepadProfile>().ToArray();
-        // }
         
         static float dpadGravity { get { return InputManager.dpadGravity; } }
         static float dpadSensitivity { get { return InputManager.dpadSensitivity; } }
         static bool dpadSnap { get { return InputManager.dpadSnap; } }
-        static int maxJoysticks { get { return InputManager.maxPlayers; } }
+        static int maxJoysticks;// { get { return InputManager.maxPlayers; } }
         
         static DPadState[] m_dpadState;
         static string[] m_axisNameLookupTable;
@@ -132,6 +127,8 @@ namespace CustomInputManager
             // this.dpadSnap = dpadSnap;
 
             // allGamepadProfiles = LoadAllGamepadProfiles();
+
+            maxJoysticks = InputManager.maxPlayers;
 
             gamepadProfilesPerGamepad = new GenericGamepadProfile[maxJoysticks];
             gamepadNames = new string[maxJoysticks];
@@ -147,7 +144,8 @@ namespace CustomInputManager
         }
 
         public static void OnStart () {
-            CustomInput.RunCoroutine(CheckForGamepads());
+            UpdateManager.instance.StartCoroutine(CheckForGamepads());
+            // CustomInput.RunCoroutine(CheckForGamepads());
         }
 
         static string[] gamepadNames;
@@ -170,7 +168,7 @@ namespace CustomInputManager
             return gamepadConnectionStates[gamepad];
         }
 
-        static  IEnumerator CheckForGamepads()
+        static IEnumerator CheckForGamepads()
         {
             while(true)
             {
@@ -230,11 +228,11 @@ namespace CustomInputManager
                 GenericGamepadProfile profile;
                 if (!GamepadAvailable(i, out profile)) continue;
                 
-                if(profile.DPadType == GamepadDPadType.Button)
+                if(profile.m_dpadType == GamepadDPadType.Button)
                 {
                     // mimic axis values
-                    UpdateDPadAxis(i, deltaTime, 0, profile.DPadRightButton, profile.DPadLeftButton);
-                    UpdateDPadAxis(i, deltaTime, 1, profile.DPadUpButton, profile.DPadDownButton);
+                    UpdateDPadAxis(i, deltaTime, 0, profile.m_dpadRightButton, profile.m_dpadLeftButton);
+                    UpdateDPadAxis(i, deltaTime, 1, profile.m_dpadUpButton, profile.m_dpadDownButton);
                 }
                 else
                 {
@@ -244,7 +242,7 @@ namespace CustomInputManager
             }
         }
 
-        static  void UpdateDPadAxis(int gamepad, float deltaTime, int axis, int posButton, int negButton)
+        static void UpdateDPadAxis(int gamepad, float deltaTime, int axis, int posButton, int negButton)
         {
             bool posPressed = GetButton(posButton, gamepad);
             bool negPressed = GetButton(negButton, gamepad);
@@ -286,8 +284,8 @@ namespace CustomInputManager
         static void UpdateDPadButton(int gamepad, GenericGamepadProfile profile)
         {
             int jOffset = gamepad * InputBinding.MAX_JOYSTICK_AXES;
-            float x = Input.GetAxis(m_axisNameLookupTable[jOffset + profile.DPadXAxis]);
-            float y = Input.GetAxis(m_axisNameLookupTable[jOffset + profile.DPadYAxis]);
+            float x = Input.GetAxis(m_axisNameLookupTable[jOffset + profile.m_dpadXAxis]);
+            float y = Input.GetAxis(m_axisNameLookupTable[jOffset + profile.m_dpadYAxis]);
             m_dpadState[gamepad].UpdateButtonStates (y >= dpadThreshold, y <= negDpadThreshold, x <= negDpadThreshold, x >= dpadThreshold);
         }
 
@@ -328,22 +326,22 @@ namespace CustomInputManager
 
             switch(axis)
             {
-                case GamepadAxis.LeftThumbstickX:  axisID = profile.LeftStickXAxis; break;
-                case GamepadAxis.LeftThumbstickY:  axisID = profile.LeftStickYAxis; break;
-                case GamepadAxis.RightThumbstickX: axisID = profile.RightStickXAxis; break;
-                case GamepadAxis.RightThumbstickY: axisID = profile.RightStickYAxis; break;
+                case GamepadAxis.LeftThumbstickX:  axisID = profile.m_leftStickXAxis; break;
+                case GamepadAxis.LeftThumbstickY:  axisID = profile.m_leftStickYAxis; break;
+                case GamepadAxis.RightThumbstickX: axisID = profile.m_rightStickXAxis; break;
+                case GamepadAxis.RightThumbstickY: axisID = profile.m_rightStickYAxis; break;
                 
                 case GamepadAxis.DPadX: 
-                    if (profile.DPadType == GamepadDPadType.Button) return m_dpadState[gamepad].axes[0];
-                    axisID = profile.DPadXAxis; 
+                    if (profile.m_dpadType == GamepadDPadType.Button) return m_dpadState[gamepad].axes[0];
+                    axisID = profile.m_dpadXAxis; 
                     break;
                 case GamepadAxis.DPadY: 
-                    if (profile.DPadType == GamepadDPadType.Button) return m_dpadState[gamepad].axes[1];
-                    axisID = profile.DPadYAxis; 
+                    if (profile.m_dpadType == GamepadDPadType.Button) return m_dpadState[gamepad].axes[1];
+                    axisID = profile.m_dpadYAxis; 
                     break;
                 
-                case GamepadAxis.LeftTrigger:  return AdjustOSXAxis (Input.GetAxis(m_axisNameLookupTable[gamepad * InputBinding.MAX_JOYSTICK_AXES + profile.LeftTriggerAxis]), gamepad, ref checkedGamepadLTriggersForInitialization);
-                case GamepadAxis.RightTrigger: return AdjustOSXAxis (Input.GetAxis(m_axisNameLookupTable[gamepad * InputBinding.MAX_JOYSTICK_AXES + profile.RightTriggerAxis]), gamepad, ref checkedGamepadRTriggersForInitialization);
+                case GamepadAxis.LeftTrigger:  return AdjustOSXAxis (Input.GetAxis(m_axisNameLookupTable[gamepad * InputBinding.MAX_JOYSTICK_AXES + profile.m_leftTriggerAxis]), gamepad, ref checkedGamepadLTriggersForInitialization);
+                case GamepadAxis.RightTrigger: return AdjustOSXAxis (Input.GetAxis(m_axisNameLookupTable[gamepad * InputBinding.MAX_JOYSTICK_AXES + profile.m_rightTriggerAxis]), gamepad, ref checkedGamepadRTriggersForInitialization);
             }
 
             return axisID >= 0 ? Input.GetAxis(m_axisNameLookupTable[gamepad * InputBinding.MAX_JOYSTICK_AXES + axisID]) : 0.0f;
@@ -357,8 +355,8 @@ namespace CustomInputManager
         }
 
         static bool CheckForGamepadProfile (int gamepad, out GenericGamepadProfile profile) {
-            profile = null;
-            if (!IndexInRange(gamepad)) return false;
+            // profile = null;
+            // if (!IndexInRange(gamepad)) return false;
             profile = gamepadProfilesPerGamepad[gamepad];
             if (profile == null) {
                 Debug.LogError("No Gamepad Profile supplied For Input Manager...");
@@ -373,36 +371,40 @@ namespace CustomInputManager
             
             switch(button)
             {
-                case GamepadButton.LeftStick:       return callback(profile.LeftStickButton, gamepad);
-                case GamepadButton.RightStick:      return callback(profile.RightStickButton, gamepad);
-                case GamepadButton.LeftBumper:      return callback(profile.LeftBumperButton, gamepad);
-                case GamepadButton.RightBumper:     return callback(profile.RightBumperButton, gamepad);
+                case GamepadButton.LeftStick:       return callback(profile.m_leftStickButton, gamepad);
+                case GamepadButton.RightStick:      return callback(profile.m_rightStickButton, gamepad);
+                case GamepadButton.LeftBumper:      return callback(profile.m_leftBumperButton, gamepad);
+                case GamepadButton.RightBumper:     return callback(profile.m_rightBumperButton, gamepad);
                 
-                case GamepadButton.Back:            return callback(profile.BackButton, gamepad);
-                case GamepadButton.Start:           return callback(profile.StartButton, gamepad);
-                case GamepadButton.ActionBottom:    return callback(profile.ActionBottomButton, gamepad);
-                case GamepadButton.ActionRight:     return callback(profile.ActionRightButton, gamepad);
-                case GamepadButton.ActionLeft:      return callback(profile.ActionLeftButton, gamepad);
-                case GamepadButton.ActionTop:       return callback(profile.ActionTopButton, gamepad);
+                case GamepadButton.Back:            return callback(profile.m_backButton, gamepad);
+                case GamepadButton.Start:           return callback(profile.m_startButton, gamepad);
+                case GamepadButton.ActionBottom:    return callback(profile.m_actionBottomButton, gamepad);
+                case GamepadButton.ActionRight:     return callback(profile.m_actionRightButton, gamepad);
+                case GamepadButton.ActionLeft:      return callback(profile.m_actionLeftButton, gamepad);
+                case GamepadButton.ActionTop:       return callback(profile.m_actionTopButton, gamepad);
                 
-                case GamepadButton.DPadUp:          return profile.DPadType == GamepadDPadType.Button ? callback(profile.DPadUpButton, gamepad) : m_dpadState[gamepad].Up == dpadButtonStateCheck;
-                case GamepadButton.DPadDown:        return profile.DPadType == GamepadDPadType.Button ? callback(profile.DPadDownButton, gamepad) : m_dpadState[gamepad].Down == dpadButtonStateCheck;
-                case GamepadButton.DPadLeft:        return profile.DPadType == GamepadDPadType.Button ? callback(profile.DPadLeftButton, gamepad) : m_dpadState[gamepad].Left == dpadButtonStateCheck;
-                case GamepadButton.DPadRight:       return profile.DPadType == GamepadDPadType.Button ? callback(profile.DPadRightButton, gamepad) : m_dpadState[gamepad].Right == dpadButtonStateCheck;
+                case GamepadButton.DPadUp:          return profile.m_dpadType == GamepadDPadType.Button ? callback(profile.m_dpadUpButton, gamepad) : m_dpadState[gamepad].Up == dpadButtonStateCheck;
+                case GamepadButton.DPadDown:        return profile.m_dpadType == GamepadDPadType.Button ? callback(profile.m_dpadDownButton, gamepad) : m_dpadState[gamepad].Down == dpadButtonStateCheck;
+                case GamepadButton.DPadLeft:        return profile.m_dpadType == GamepadDPadType.Button ? callback(profile.m_dpadLeftButton, gamepad) : m_dpadState[gamepad].Left == dpadButtonStateCheck;
+                case GamepadButton.DPadRight:       return profile.m_dpadType == GamepadDPadType.Button ? callback(profile.m_dpadRightButton, gamepad) : m_dpadState[gamepad].Right == dpadButtonStateCheck;
                 
                 default:
                     return false;
             }
         }
 
-        public static bool GetButton(GamepadButton button, int gamepad) { return ButtonQuery(button, gamepad, GetButton, ButtonState.Pressed); }
-        public static bool GetButtonDown(GamepadButton button, int gamepad) { return ButtonQuery(button, gamepad, GetButtonDown, ButtonState.JustPressed); }
-        public static bool GetButtonUp(GamepadButton button, int gamepad) { return ButtonQuery(button, gamepad, GetButtonUp, ButtonState.JustReleased); }
+        static System.Func<int, int, bool> _GetButton = GetButton;
+        static System.Func<int, int, bool> _GetButtonDown = GetButtonDown;
+        static System.Func<int, int, bool> _GetButtonUp = GetButtonUp;
+
+        public static bool GetButton(GamepadButton button, int gamepad) { return ButtonQuery(button, gamepad, _GetButton, ButtonState.Pressed); }
+        public static bool GetButtonDown(GamepadButton button, int gamepad) { return ButtonQuery(button, gamepad, _GetButtonDown, ButtonState.JustPressed); }
+        public static bool GetButtonUp(GamepadButton button, int gamepad) { return ButtonQuery(button, gamepad, _GetButtonUp, ButtonState.JustReleased); }
 
         static readonly int firstJoyButton = (int)KeyCode.Joystick1Button0;
 
-        static bool GetButton(int button, int gamepad) { return CustomInput.GetKey((KeyCode)(firstJoyButton + (gamepad * InputBinding.MAX_JOYSTICK_BUTTONS) + button)); }
-        static bool GetButtonDown(int button, int gamepad) { return CustomInput.GetKeyDown((KeyCode)(firstJoyButton + (gamepad * InputBinding.MAX_JOYSTICK_BUTTONS) + button)); }
-        static bool GetButtonUp(int button, int gamepad) { return CustomInput.GetKeyUp((KeyCode)(firstJoyButton + (gamepad * InputBinding.MAX_JOYSTICK_BUTTONS) + button)); }
+        static bool GetButton(int button, int gamepad) { return Input.GetKey((KeyCode)(firstJoyButton + (gamepad * InputBinding.MAX_JOYSTICK_BUTTONS) + button)); }
+        static bool GetButtonDown(int button, int gamepad) { return Input.GetKeyDown((KeyCode)(firstJoyButton + (gamepad * InputBinding.MAX_JOYSTICK_BUTTONS) + button)); }
+        static bool GetButtonUp(int button, int gamepad) { return Input.GetKeyUp((KeyCode)(firstJoyButton + (gamepad * InputBinding.MAX_JOYSTICK_BUTTONS) + button)); }
     }
 }
